@@ -36,7 +36,7 @@ import org.bitcoinj.wallet.SendRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.danubetech.keyformats.PrivateKeyToJWK;
+import com.danubetech.keyformats.PrivateKey_to_JWK;
 import com.nimbusds.jose.jwk.JWK;
 
 import did.Authentication;
@@ -540,7 +540,7 @@ public class DidBtcrDriver extends AbstractDriver implements Driver {
 		String kid = null;
 		String use = null;
 
-		return PrivateKeyToJWK.P_256KPrivateKeyToJWK(privateKey, kid, use);
+		return PrivateKey_to_JWK.secp256k1PrivateKey_to_JWK(privateKey, kid, use);
 	}
 
 	private static String identifierToPublicKeyDIDURL(String identifier) {
