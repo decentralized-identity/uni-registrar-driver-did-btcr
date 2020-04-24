@@ -39,10 +39,7 @@ import org.slf4j.LoggerFactory;
 import com.danubetech.keyformats.PrivateKey_to_JWK;
 import com.nimbusds.jose.jwk.JWK;
 
-import did.Authentication;
 import did.DIDDocument;
-import did.PublicKey;
-import did.Service;
 import info.weboftrust.btctxlookup.Chain;
 import info.weboftrust.btctxlookup.ChainAndLocationData;
 import info.weboftrust.btctxlookup.bitcoinconnection.BTCDRPCBitcoinConnection;
@@ -239,9 +236,7 @@ public class DidBtcrDriver extends AbstractDriver implements Driver {
 
 		URI didContinuationUri;
 
-		if ((registerRequest.getAddServices() != null && registerRequest.getAddServices().size() > 0) ||
-				(registerRequest.getAddPublicKeys() != null && registerRequest.getAddPublicKeys().size() > 0) ||
-				(registerRequest.getAddAuthentications() != null && registerRequest.getAddAuthentications().size() > 0)) {
+		if (registerRequest.getDidDocument() != null) {
 
 			didContinuationUri = this.didDocContinuation.prepareDIDDocContinuation(null);
 		} else {
@@ -318,7 +313,7 @@ public class DidBtcrDriver extends AbstractDriver implements Driver {
 
 		// REGISTER STATE WAIT: JOBID
 
-		DidBtcrJob job = new DidBtcrJob(chain, transactionHash, didContinuationUri, privateKey, registerRequest.getAddServices(), registerRequest.getAddPublicKeys(), registerRequest.getAddAuthentications());
+		DidBtcrJob job = new DidBtcrJob(chain, transactionHash, didContinuationUri, privateKey, registerRequest.getDidDocument());
 		String newjobId = this.newJob(job);
 
 		// REGISTER STATE WAIT: METHOD METADATA
@@ -351,9 +346,7 @@ public class DidBtcrDriver extends AbstractDriver implements Driver {
 		String transactionHash = job.getTransactionHash();
 		URI didContinuationUri = job.getDidContinuationUri();
 		ECKey privateKey = job.getPrivateKey();
-		List<Service> addServices = job.getAddServices();
-		List<PublicKey> addPublicKeys = job.getAddPublicKeys();
-		List<Authentication> addAuthentications = job.getAddAuthentications();
+		DIDDocument didContinuationDocument = job.getDidContinuationDocument();
 
 		// read options
 
@@ -397,8 +390,6 @@ public class DidBtcrDriver extends AbstractDriver implements Driver {
 
 			if (log.isDebugEnabled()) log.debug("Storing continuation DID Document: " + didContinuationUri);
 
-			DIDDocument didContinuationDocument = DIDDocument.build(did, addPublicKeys, addAuthentications, addServices);
-
 			try {
 
 				this.didDocContinuation.storeDIDDocContinuation(didContinuationUri, didContinuationDocument);
@@ -418,19 +409,19 @@ public class DidBtcrDriver extends AbstractDriver implements Driver {
 
 		// REGISTRATION STATE FINISHED: SECRET
 
+		String keyUrl = identifierToKeyUrl(identifier);
+		JWK jsonWebKey = privateKeyToJWK(privateKey);
 		String publicKeyHex = privateKey.getPublicKeyAsHex();
 		String privateKeyHex = privateKey.getPrivateKeyAsHex();
 		String privateKeyWif = privateKey.getPrivateKeyAsWiF(chainToNetworkParameters(chain));
-		JWK jsonWebKey = privateKeyToJWK(privateKey);
-		String publicKeyDIDURL = identifierToPublicKeyDIDURL(identifier);
 
 		List<Map<String, Object>> jsonKeys = new ArrayList<Map<String, Object>> ();
 		Map<String, Object> jsonKey = new HashMap<String, Object> ();
+		jsonKey.put("id", keyUrl);
+		jsonKey.put("privateKeyJwk", jsonWebKey.toJSONObject());
 		jsonKey.put("publicKeyHex", publicKeyHex);
 		jsonKey.put("privateKeyHex", privateKeyHex);
 		jsonKey.put("privateKeyWif", privateKeyWif);
-		jsonKey.put("privateKeyJwk", jsonWebKey.toJSONObject());
-		jsonKey.put("publicKeyDIDURL", publicKeyDIDURL);
 		jsonKeys.add(jsonKey);
 
 		Map<String, Object> secret = new LinkedHashMap<String, Object> ();
@@ -543,7 +534,7 @@ public class DidBtcrDriver extends AbstractDriver implements Driver {
 		return PrivateKey_to_JWK.secp256k1PrivateKey_to_JWK(privateKey, kid, use);
 	}
 
-	private static String identifierToPublicKeyDIDURL(String identifier) {
+	private static String identifierToKeyUrl(String identifier) {
 
 		return identifier + "#key-0";
 	}
@@ -579,19 +570,15 @@ public class DidBtcrDriver extends AbstractDriver implements Driver {
 		private String transactionHash;
 		private URI didContinuationUri;
 		private ECKey privateKey;
-		private List<Service> addServices;
-		private List<PublicKey> addPublicKeys;
-		private List<Authentication> addAuthentications;
+		private DIDDocument didContinuationDocument;
 
-		private DidBtcrJob(String chain, String transactionHash, URI didContinuationUri, ECKey privateKey, List<Service> addServices, List<PublicKey> addPublicKeys, List<Authentication> addAuthentications) {
+		private DidBtcrJob(String chain, String transactionHash, URI didContinuationUri, ECKey privateKey, DIDDocument didContinuationDocument) {
 
 			this.chain = chain;
 			this.transactionHash = transactionHash;
 			this.didContinuationUri = didContinuationUri;
 			this.privateKey = privateKey;
-			this.addServices = addServices;
-			this.addPublicKeys = addPublicKeys;
-			this.addAuthentications = addAuthentications;
+			this.didContinuationDocument = didContinuationDocument;
 		}
 
 		private String getChain() {
@@ -614,19 +601,9 @@ public class DidBtcrDriver extends AbstractDriver implements Driver {
 			return this.privateKey;
 		}
 
-		private List<Service> getAddServices() {
+		private DIDDocument getDidContinuationDocument() {
 
-			return this.addServices;
-		}
-
-		private List<PublicKey> getAddPublicKeys() {
-
-			return this.addPublicKeys;
-		}
-
-		private List<Authentication> getAddAuthentications() {
-
-			return this.addAuthentications;
+			return this.didContinuationDocument;
 		}
 	}
 
