@@ -7,7 +7,7 @@ This is a [Universal Registrar](https://github.com/decentralized-identity/univer
 ## Specifications
 
 * [Decentralized Identifiers](https://w3c.github.io/did-core/)
-* [DID Method Specification](https://w3c-ccg.github.io/did-method-v1/)
+* [DID Method Specification](https://w3c-ccg.github.io/didm-btcr/)
 
 ## Build and Run (Docker)
 
