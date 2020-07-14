@@ -7,6 +7,21 @@ import did.DIDDocument;
 
 public interface DIDDocContinuation {
 
-	public URI prepareDIDDocContinuation(DIDDocument didDocument);
-	public void storeDIDDocContinuation(URI didContinuationUri, DIDDocument didContinuationDocument) throws IOException;
+	/**
+	 *
+	 * @param didDocument {@link DIDDocument} to be stored
+	 * @return {@link URI} for given DIDDocuments
+	 */
+	URI prepareDIDDocContinuation(DIDDocument didDocument);
+
+	/**
+	 *
+	 * @param didContinuationUri      {@link URI} to use for storing
+	 *                                {@link DIDDocument}}
+	 * 
+	 * @param didContinuationDocument DID Continuation Document in form of
+	 *                                {@link DIDDocument}
+	 * @throws IOException {@link IOException} IOException
+	 */
+	void storeDIDDocContinuation(URI didContinuationUri, DIDDocument didContinuationDocument) throws IOException;
 }

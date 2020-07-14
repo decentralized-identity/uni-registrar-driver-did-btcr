@@ -4,5 +4,10 @@ import did.DIDDocument;
 
 public interface DIDDocFileNameStrategy {
 
-	public String createDIDDocFileName(DIDDocument didDocument);
+	/**
+	 *
+	 * @param didDocument {@link DIDDocument}
+	 * @return created file name for given {@link DIDDocument}
+	 */
+	String createDIDDocFileName(DIDDocument didDocument);
 }
