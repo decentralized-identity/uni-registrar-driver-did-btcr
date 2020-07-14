@@ -3,11 +3,6 @@
 FROM universalregistrar/base-alpine
 MAINTAINER Markus Sabadello <markus@danubetech.com>
 
-# build dependencies
-
-RUN cd /opt/ && git clone https://github.com/WebOfTrustInfo/btc-tx-lookup-java.git && \
-    cd /opt/btc-tx-lookup-java/ && mvn clean install -DskipTests && mvn clean
-
 # build driver-did-btcr
 
 ADD . /opt/driver-did-btcr
@@ -16,16 +11,52 @@ RUN cd /opt/driver-did-btcr && mvn clean install package -N -DskipTests
 
 # variables
 
-ENV uniregistrar_driver_did_btcr_peerMainnet=localhost:28333
-ENV uniregistrar_driver_did_btcr_peerTestnet=localhost:38333
+ENV uniregistrar_driver_did_btcr_Mainnet=
+ENV uniregistrar_driver_did_btcr_Testnet=
+ENV uniregistrar_driver_did_btcr_Regtest=
+
+ENV uniregistrar_driver_did_btcr_methodPrefix=
+ENV uniregistrar_driver_did_btcr_testnetPrefix=
+ENV uniregistrar_driver_did_btcr_mainnetPrefix=
+ENV uniregistrar_driver_did_btcr_regtestPrefix=
+
+ENV uniregistrar_driver_did_btcr_basePath=/var/www/html/btcr-continuation
+ENV uniregistrar_driver_did_btcr_baseUri=http://localhost
+
 ENV uniregistrar_driver_did_btcr_privateKeyMainnet=
 ENV uniregistrar_driver_did_btcr_privateKeyTestnet=
-ENV uniregistrar_driver_did_btcr_didDocContinuation=localfile
-ENV uniregistrar_driver_did_btcr_basePath=/var/www/html/btcr-continuation/
-ENV uniregistrar_driver_did_btcr_baseUri=http://localhost/
-ENV uniregistrar_driver_did_btcr_bitcoinConnection=blockcypherapi
-ENV uniregistrar_driver_did_btcr_rpcUrlMainnet=http://user:pass@localhost:8332/
-ENV uniregistrar_driver_did_btcr_rpcUrlTestnet=http://user:pass@localhost:18332/
+ENV uniregistrar_driver_did_btcr_privateKeyRegtest=
+
+ENV uniregistrar_driver_did_btcr_walletPathMainnet=/opt/wallets
+ENV uniregistrar_driver_did_btcr_walletPathTestnet=/opt/wallets
+ENV uniregistrar_driver_did_btcr_walletPathRegtest=/opt/wallets
+
+ENV uniregistrar_driver_did_btcr_walletPrefixMainnet=mainnet
+ENV uniregistrar_driver_did_btcr_walletPrefixTestnet=testnet
+ENV uniregistrar_driver_did_btcr_walletPrefixRegtest=regtestnet
+
+ENV uniregistrar_driver_did_btcr_requiredTxDepth=
+ENV uniregistrar_driver_did_btcr_targetFundAmount=
+
+ENV uniregistrar_driver_did_btcr_utxoUpkeepMainnet=
+ENV uniregistrar_driver_did_btcr_utxoUpkeepTestnet=
+ENV uniregistrar_driver_did_btcr_utxoUpkeepRegtest=
+
+uniregistrar_driver_did_btcr_utxoProducingMainnet=false
+uniregistrar_driver_did_btcr_utxoProducingTestnet=true
+uniregistrar_driver_did_btcr_utxoProducingRegtest=true
+
+ENV uniregistrar_driver_did_btcr_rpcUrlMainnet=
+ENV uniregistrar_driver_did_btcr_rpcUrlTestnet=
+ENV uniregistrar_driver_did_btcr_rpcUrlRegtest=
+
+ENV uniregistrar_driver_did_btcr_peerMainnet=localhost:28333
+ENV uniregistrar_driver_did_btcr_peerTestnet=localhost:18333
+ENV uniregistrar_driver_did_btcr_bitcoinConnection=BTCD
+
+ENV uniregistrar_driver_did_btcr_followDeactivation=true
+ENV uniregistrar_driver_did_btcr_overWriteDidDocs=true
+
 
 # done
 
