@@ -61,7 +61,7 @@ public class UTXOProducer {
 	private long checkSuitableUtxos() {
 		Context.propagate(driver.getContext(chain));
 		long utxoCount = utxoWallet.calculateAllSpendCandidates(false, true).size();
-		log.debug("Current suitable utxo amount: {} , {}", utxoCount, utxoWallet.getImportedKeys().size());
+		log.debug("Current suitable utxo amount: {}", utxoCount);
 		return utxoCount;
 	}
 
