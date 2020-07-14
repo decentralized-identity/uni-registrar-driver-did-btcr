@@ -32,7 +32,7 @@ The BTCR Driver can be configured with environment variables and/or passing appl
 
 - [Driver Defaults](docs/driver_defaults.md)
 
-- [Example Application Properties](examples/example-application.properties) and its [Corresponding Environment Variables](examples/example-env).
+- [Example Application Properties](config_examples/example-application.properties) and its [Corresponding Environment Variables](config_examples/example-env).
 
   
 

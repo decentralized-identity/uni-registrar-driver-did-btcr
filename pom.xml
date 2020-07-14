@@ -1,12 +1,27 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
-    <groupId>decentralized-identity</groupId>
     <modelVersion>4.0.0</modelVersion>
     <artifactId>uni-registrar-driver-did-btcr</artifactId>
     <packaging>${packaging.type}</packaging>
     <name>uni-registrar-driver-did-btcr</name>
-    <version>0.2-SNAPSHOT</version>
+
+    <parent>
+        <groupId>decentralized-identity</groupId>
+        <artifactId>uni-registrar</artifactId>
+        <version>0.2-SNAPSHOT</version>
+    </parent>
+
+    <repositories>
+        <repository>
+            <id>danubetech-maven-releases</id>
+            <url>https://repo.danubetech.com/repository/maven-releases/</url>
+        </repository>
+        <repository>
+            <id>danubetech-maven-snapshots</id>
+            <url>https://repo.danubetech.com/repository/maven-snapshots/</url>
+        </repository>
+    </repositories>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -37,28 +52,6 @@
         <maven-source-plugin.version>3.2.0</maven-source-plugin.version>
         <maven-dependency-plugin.version>3.1.2</maven-dependency-plugin.version>
     </properties>
-
-    <repositories>
-        <repository>
-            <id>danubetech-maven-releases</id>
-            <url>https://repo.danubetech.com/repository/maven-releases/</url>
-        </repository>
-        <repository>
-            <id>danubetech-maven-snapshots</id>
-            <url>https://repo.danubetech.com/repository/maven-snapshots/</url>
-        </repository>
-    </repositories>
-
-    <distributionManagement>
-        <snapshotRepository>
-            <id>danubetech-maven-snapshots</id>
-            <url>https://repo.danubetech.com/repository/maven-snapshots/</url>
-        </snapshotRepository>
-        <repository>
-            <id>danubetech-maven-releases</id>
-            <url>https://repo.danubetech.com/repository/maven-releases/</url>
-        </repository>
-    </distributionManagement>
 
     <profiles>
         <profile>
