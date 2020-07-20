@@ -9,7 +9,7 @@
     <parent>
         <groupId>decentralized-identity</groupId>
         <artifactId>uni-registrar</artifactId>
-        <version>0.2-SNAPSHOT</version>
+        <version>0.1-SNAPSHOT</version>
     </parent>
 
     <repositories>
@@ -39,8 +39,8 @@
 
         <key-formats-java.version>0.1.1</key-formats-java.version>
         <btc-tx-lookup-java.version>0.2-SNAPSHOT</btc-tx-lookup-java.version>
-        <uni-registrar-driver.version>0.2-SNAPSHOT</uni-registrar-driver.version>
-        <uni-registrar-core.version>0.2-SNAPSHOT</uni-registrar-core.version>
+        <uni-registrar-driver.version>0.1-SNAPSHOT</uni-registrar-driver.version>
+        <uni-registrar-core.version>0.1-SNAPSHOT</uni-registrar-core.version>
         <!--         test dependencies -->
         <junit-jupiter.version>5.6.2</junit-jupiter.version>
         <junit-platform.version>1.6.1</junit-platform.version>
