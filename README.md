@@ -4,8 +4,6 @@
 
 This is a [Universal Registrar](https://github.com/decentralized-identity/universal-registrar/) driver for **did:btcr** identifiers.
 
-[[_TOC_]]
-
 
 
 ## Specifications
