@@ -64,6 +64,27 @@ public class DriverConfigs {
 	private boolean followDeactivate;
 	private boolean configured = false;
 
+	private String certificateMainnet;
+	private String certificateTestnet;
+
+	public String getCertificateMainnet() {
+		return certificateMainnet;
+	}
+
+	public void setCertificateMainnet(String certificateMainnet) {
+		Preconditions.checkState(!configured, ErrorMessages.DRIVER_CONFIGS_FINALIZED);
+		this.certificateMainnet = certificateMainnet;
+	}
+
+	public String getCertificateTestnet() {
+		return certificateTestnet;
+	}
+
+	public void setCertificateTestnet(String certificateTestnet) {
+		Preconditions.checkState(!configured, ErrorMessages.DRIVER_CONFIGS_FINALIZED);
+		this.certificateTestnet = certificateTestnet;
+	}
+
 	public void finalizeConfiguration() {
 		if (!configured) {
 			configured = true;

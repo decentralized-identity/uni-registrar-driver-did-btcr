@@ -49,17 +49,23 @@ ENV uniregistrar_driver_did_btcr_utxoProducingMainnet=false
 ENV uniregistrar_driver_did_btcr_utxoProducingTestnet=true
 ENV uniregistrar_driver_did_btcr_utxoProducingRegtest=true
 
+ENV uniregistrar_driver_did_btcr_checkIntervalMainnet=
+ENV uniregistrar_driver_did_btcr_checkIntervalTestnet=
+ENV uniregistrar_driver_did_btcr_checkIntervalRegtest=
+
 ENV uniregistrar_driver_did_btcr_rpcUrlMainnet=
 ENV uniregistrar_driver_did_btcr_rpcUrlTestnet=
 ENV uniregistrar_driver_did_btcr_rpcUrlRegtest=
 
-ENV uniregistrar_driver_did_btcr_peerMainnet=localhost:28333
-ENV uniregistrar_driver_did_btcr_peerTestnet=localhost:18333
+ENV uniregistrar_driver_did_btcr_peerMainnet=
+ENV uniregistrar_driver_did_btcr_peerTestnet=
 ENV uniregistrar_driver_did_btcr_bitcoinConnection=BTCD
 
 ENV uniregistrar_driver_did_btcr_followDeactivation=true
 ENV uniregistrar_driver_did_btcr_overWriteDidDocs=true
 
+ENV uniregistrar_driver_did_btcr_rpcCertMainnet=
+ENV uniregistrar_driver_did_btcr_rpcCertTestnet=
 
 # done
 

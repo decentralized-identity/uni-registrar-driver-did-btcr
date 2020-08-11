@@ -15,6 +15,8 @@ import org.apache.commons.lang3.StringUtils;
 import info.weboftrust.btctxlookup.Chain;
 import uniregistrar.driver.did.btcr.DriverConstants;
 
+import static uniregistrar.driver.did.btcr.DriverConstants.*;
+
 public class ParsingUtils {
 	private static final DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
 	private static final String TIME_ZONE = "UTC";
@@ -54,6 +56,14 @@ public class ParsingUtils {
 			return DriverConstants.DEFAULT_CHAIN.name();
 		} else {
 			return Chain.fromString((String) options.get("chain")).name();
+		}
+	}
+
+	public static String getCertificateString(String givenCertString) {
+		if (givenCertString.toUpperCase().contains("CERTIFICATE")) {
+			return givenCertString;
+		} else {
+			return BEGIN_CERT + LINE_SEPARATOR + givenCertString + LINE_SEPARATOR + END_CERT;
 		}
 	}
 }

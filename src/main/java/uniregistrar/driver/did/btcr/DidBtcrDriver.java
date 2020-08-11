@@ -153,6 +153,11 @@ public class DidBtcrDriver extends AbstractDriver implements Driver {
 		if (mainnet) {
 			try {
 				rpcClientMainNet = NetworkUtils.getBitcoindRpcClient(configs, Chain.MAINNET);
+				String mainnetCert = configs.getCertificateMainnet();
+				if (mainnetCert != null) {
+					rpcClientMainNet.getBitcoindRpcClient().setSslSocketFactory(
+							NetworkUtils.getSslSocketFactory(ParsingUtils.getCertificateString(mainnetCert)));
+				}
 				contextMainnet = new Context(MainNetParams.get());
 			} catch (MalformedURLException e) {
 				throw new ConfigurationException(e);
@@ -161,6 +166,11 @@ public class DidBtcrDriver extends AbstractDriver implements Driver {
 		if (testnet) {
 			try {
 				rpcClientTestNet = NetworkUtils.getBitcoindRpcClient(configs, Chain.TESTNET);
+				String testnetCert = configs.getCertificateTestnet();
+				if (testnetCert != null) {
+					rpcClientTestNet.getBitcoindRpcClient().setSslSocketFactory(
+							NetworkUtils.getSslSocketFactory(ParsingUtils.getCertificateString(testnetCert)));
+				}
 				contextTestnet = new Context(TestNet3Params.get());
 			} catch (MalformedURLException e) {
 				throw new ConfigurationException(e);

@@ -49,6 +49,11 @@ public final class DriverConstants {
 	// This is a fallback number, could be removed
 	public static final int TARGET_UTXO_UPKEEP = 10;
 
+	public static final String BEGIN_CERT = "-----BEGIN CERTIFICATE-----";
+	public static final String END_CERT = "-----END CERTIFICATE-----";
+
+	public final static String LINE_SEPARATOR = System.getProperty("line.separator");
+
 	private DriverConstants() {
 	}
 }

@@ -337,6 +337,30 @@ public final class Configurator {
 			log.info("Regtestnet wallet prefix is set to: {}", driverConfigs::getWalletPathRegtest);
 		}
 
+		// Set connection certificates
+
+		if (mainnet) {
+			driverConfigs.setCertificateMainnet(
+					StringUtils.isNotEmpty(System.getenv("uniregistrar_driver_did_btcr_rpcCertMainnet"))
+							? System.getenv("uniregistrar_driver_did_btcr_rpcCertMainnet")
+							: (StringUtils.isNotEmpty(props.getProperty("conn.mainnet.certificate"))
+									? props.getProperty("conn.mainnet.certificate")
+									: null));
+
+			log.info("Mainnet RPC certificate path is set to: {}", driverConfigs::getCertificateMainnet);
+		}
+
+		if (testnet) {
+			driverConfigs.setCertificateTestnet(
+					StringUtils.isNotEmpty(System.getenv("uniregistrar_driver_did_btcr_rpcCertTestnet"))
+							? System.getenv("uniregistrar_driver_did_btcr_rpcCertTestnet")
+							: (StringUtils.isNotEmpty(props.getProperty("conn.testnet.certificate"))
+									? props.getProperty("conn.testnet.certificate")
+									: null));
+
+			log.info("Testnet RPC certificate path is set to: {}", driverConfigs::getCertificateTestnet);
+		}
+
 		// Set required depth for tx confirmations
 
 		driverConfigs
