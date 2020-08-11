@@ -1,5 +1,27 @@
 package uniregistrar.driver.did.btcr.service;
 
+import com.google.common.base.Preconditions;
+import com.google.common.util.concurrent.ListenableFuture;
+import info.weboftrust.btctxlookup.*;
+import info.weboftrust.btctxlookup.bitcoinconnection.AbstractBitcoinConnection;
+import info.weboftrust.btctxlookup.bitcoinconnection.BitcoinConnection;
+import info.weboftrust.btctxlookup.bitcoinconnection.BitcoinConnectionException;
+import info.weboftrust.btctxlookup.bitcoinconnection.BitcoindRPCBitcoinConnection;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.bitcoinj.core.*;
+import org.bitcoinj.core.listeners.DownloadProgressTracker;
+import org.bitcoinj.kits.WalletAppKit;
+import org.bitcoinj.script.Script;
+import org.bitcoinj.wallet.*;
+import uniregistrar.driver.did.btcr.DidBtcrDriver;
+import uniregistrar.driver.did.btcr.util.BitcoinUtils;
+import uniregistrar.driver.did.btcr.util.TransactionException;
+
+import javax.annotation.Nullable;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -10,36 +32,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import javax.annotation.Nullable;
-
-import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.lang3.ArrayUtils;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.bitcoinj.core.*;
-import org.bitcoinj.core.listeners.DownloadProgressTracker;
-import org.bitcoinj.kits.WalletAppKit;
-import org.bitcoinj.net.discovery.DnsDiscovery;
-import org.bitcoinj.script.Script;
-import org.bitcoinj.wallet.*;
-
-import com.google.common.base.Preconditions;
-import com.google.common.util.concurrent.ListenableFuture;
-
-import info.weboftrust.btctxlookup.*;
-import info.weboftrust.btctxlookup.bitcoinconnection.AbstractBitcoinConnection;
-import info.weboftrust.btctxlookup.bitcoinconnection.BitcoinConnection;
-import info.weboftrust.btctxlookup.bitcoinconnection.BitcoinConnectionException;
-import info.weboftrust.btctxlookup.bitcoinconnection.BitcoindRPCBitcoinConnection;
-import uniregistrar.driver.did.btcr.DidBtcrDriver;
-import uniregistrar.driver.did.btcr.util.BitcoinUtils;
-import uniregistrar.driver.did.btcr.util.TransactionException;
-
 /**
  * This class handles bitcoinj-wallet related operations and transaction
  * broadcasting.
- * 
+ *
  * @see WalletAppKit
  */
 public class BitcoinJWalletAppKit extends AbstractBitcoinConnection implements BitcoinConnection {
@@ -74,11 +70,11 @@ public class BitcoinJWalletAppKit extends AbstractBitcoinConnection implements B
 	 *
 	 */
 	public BitcoinJWalletAppKit(DidBtcrDriver driver, Chain chain, String path, String wPrefix,
-			@Nullable ECKey privKey) {
+	                            @Nullable ECKey privKey) {
 		this.driver = driver;
 		this.path = path != null ? path : System.getProperty("user.home") + "/" + DEFAULT_FILE_NAME;
 		Preconditions.checkArgument(Files.isWritable(Paths.get(this.path)), "File path %s is not writeable!",
-				this.path);
+		                            this.path);
 		this.chain = Preconditions.checkNotNull(chain);
 		this.wPrefix = StringUtils.isEmpty(wPrefix) ? DEFAULT_PREFIX + "_" + chain.toString() : wPrefix;
 		this.params = BitcoinUtils.chainToNetworkParameters(chain);
@@ -108,7 +104,7 @@ public class BitcoinJWalletAppKit extends AbstractBitcoinConnection implements B
 		log.info("Wallet prefix: {}", () -> wPrefix);
 
 		this.kit = new WalletAppKit(driver.getContext(chain), preferredScriptType, KeyChainGroupStructure.DEFAULT,
-				new File(path), wPrefix) {
+		                            new File(path), wPrefix) {
 			@Override
 			protected void onSetupCompleted() {
 				if (privKey != null) {
@@ -125,8 +121,6 @@ public class BitcoinJWalletAppKit extends AbstractBitcoinConnection implements B
 
 		if (chain == Chain.REGTESTNET) {
 			kit.connectToLocalHost();
-		} else {
-			kit.peerGroup().addPeerDiscovery(new DnsDiscovery(params));
 		}
 
 		log.info("Waiting for the peer group to sync...");
@@ -272,7 +266,7 @@ public class BitcoinJWalletAppKit extends AbstractBitcoinConnection implements B
 	}
 
 	public Wallet creatOrLoadWallet(File wFile, boolean replayWallet) throws Exception {
-		Preconditions.checkArgument(wFile.canWrite());
+		boolean writeable = wFile.setWritable(true);
 		Wallet nWallet;
 		if (!wFile.exists()) {
 			nWallet = Wallet.createBasic(params);
