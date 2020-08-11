@@ -5,6 +5,7 @@
     <artifactId>uni-registrar-driver-did-btcr</artifactId>
     <packaging>${packaging.type}</packaging>
     <name>uni-registrar-driver-did-btcr</name>
+    <version>0.2-SNAPSHOT</version>
 
     <parent>
         <groupId>decentralized-identity</groupId>
@@ -14,43 +15,16 @@
 
     <repositories>
         <repository>
-            <id>danubetech-maven-releases</id>
-            <url>https://repo.danubetech.com/repository/maven-releases/</url>
-        </repository>
-        <repository>
-            <id>danubetech-maven-snapshots</id>
-            <url>https://repo.danubetech.com/repository/maven-snapshots/</url>
+            <id>danubetech-maven-public</id>
+            <url>https://repo.danubetech.com/repository/maven-public</url>
         </repository>
     </repositories>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <java.version>8</java.version>
-
-        <slf4j.version>1.7.30</slf4j.version>
+        <java.version>11</java.version>
         <bitcoinj-core.version>0.15.8</bitcoinj-core.version>
-        <fasterxml.jackson.version>2.11.1</fasterxml.jackson.version>
-        <commons.lang3.version>3.10</commons.lang3.version>
-        <commons.collections4.version>4.4</commons.collections4.version>
-        <apache.log4j.version>2.13.3</apache.log4j.version>
-        <google.guava.version>28.2-jre</google.guava.version>
-        <eclipse.jetty.version>9.4.30.v20200611</eclipse.jetty.version>
-        <commons-codec.version>1.14</commons-codec.version>
-
-        <key-formats-java.version>0.1.1</key-formats-java.version>
         <btc-tx-lookup-java.version>0.2-SNAPSHOT</btc-tx-lookup-java.version>
-        <uni-registrar-driver.version>0.1-SNAPSHOT</uni-registrar-driver.version>
-        <uni-registrar-core.version>0.1-SNAPSHOT</uni-registrar-core.version>
-        <!--         test dependencies -->
-        <junit-jupiter.version>5.6.2</junit-jupiter.version>
-        <junit-platform.version>1.6.1</junit-platform.version>
-        <mockito-core.version>3.3.3</mockito-core.version>
-        <!-- plugins -->
-        <maven-surefire-plugin.version>2.22.2</maven-surefire-plugin.version>
-        <maven-war-plugin.version>3.2.3</maven-war-plugin.version>
-        <maven-compiler-plugin.version>3.8.1</maven-compiler-plugin.version>
-        <maven-source-plugin.version>3.2.0</maven-source-plugin.version>
-        <maven-dependency-plugin.version>3.1.2</maven-dependency-plugin.version>
     </properties>
 
     <profiles>
@@ -77,12 +51,10 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-war-plugin</artifactId>
-                        <version>${maven-war-plugin.version}</version>
                     </plugin>
                     <plugin>
                         <groupId>org.eclipse.jetty</groupId>
                         <artifactId>jetty-maven-plugin</artifactId>
-                        <version>${eclipse.jetty.version}</version>
                         <configuration>
                             <jettyConfig>
                                 ${basedir}/src/test/resources/jetty.xml
@@ -99,25 +71,17 @@
                                 </systemProperty>
                             </systemProperties>
                             <webApp>
-                                <webInfIncludeJarPattern>^$</webInfIncludeJarPattern>
-                                <containerIncludeJarPattern>^$</containerIncludeJarPattern>
+                                <contextPath>/</contextPath>
                                 <jettyEnvXml>
                                     ${basedir}/src/test/resources/jetty-env.xml
                                 </jettyEnvXml>
-                                <contextPath>/</contextPath>
+                                <webInfIncludeJarPattern>^$</webInfIncludeJarPattern>
+                                <containerIncludeJarPattern>^$</containerIncludeJarPattern>
                             </webApp>
                         </configuration>
-                        <dependencies>
-                            <dependency>
-                                <groupId>org.apache.logging.log4j</groupId>
-                                <artifactId>log4j-web</artifactId>
-                                <version>${apache.log4j.version}</version>
-                            </dependency>
-                        </dependencies>
                     </plugin>
                 </plugins>
             </build>
-
         </profile>
 
     </profiles>
@@ -127,16 +91,10 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>${maven-compiler-plugin.version}</version>
-                <configuration>
-                    <source>${java.version}</source>
-                    <target>${java.version}</target>
-                </configuration>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-source-plugin</artifactId>
-                <version>${maven-source-plugin.version}</version>
                 <executions>
                     <execution>
                         <goals>
@@ -148,7 +106,6 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>${maven-surefire-plugin.version}</version>
                 <configuration>
                     <workingDirectory>${basedir}/../tmp</workingDirectory>
                 </configuration>
@@ -156,7 +113,6 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-dependency-plugin</artifactId>
-                <version>${maven-dependency-plugin.version}</version>
                 <executions>
                     <execution>
                         <id>execution</id>
@@ -173,49 +129,11 @@
         </plugins>
     </build>
 
-    <dependencyManagement>
-        <dependencies>
-            <dependency>
-                <groupId>com.fasterxml.jackson.core</groupId>
-                <artifactId>jackson-annotations</artifactId>
-                <version>${fasterxml.jackson.version}</version>
-            </dependency>
-        </dependencies>
-    </dependencyManagement>
-
     <dependencies>
-        <dependency>
-            <groupId>org.apache.logging.log4j</groupId>
-            <artifactId>log4j-web</artifactId>
-            <version>${apache.log4j.version}</version>
-        </dependency>
         <dependency>
             <groupId>decentralized-identity</groupId>
             <artifactId>uni-registrar-driver</artifactId>
-            <version>${uni-registrar-driver.version}</version>
             <scope>compile</scope>
-            <exclusions>
-                <exclusion>
-                    <groupId>log4j</groupId>
-                    <artifactId>log4j</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.slf4j</groupId>
-                    <artifactId>slf4j-log4j12</artifactId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>jcl-over-slf4j</artifactId>
-                    <groupId>org.slf4j</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>slf4j-api</artifactId>
-                    <groupId>org.slf4j</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>log4j-core</artifactId>
-                    <groupId>org.apache.logging.log4j</groupId>
-                </exclusion>
-            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.bitcoinj</groupId>
@@ -226,29 +144,24 @@
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
-            <version>${google.guava.version}</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>commons-codec</groupId>
             <artifactId>commons-codec</artifactId>
-            <version>${commons-codec.version}</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-lang3</artifactId>
-            <version>${commons.lang3.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-collections4</artifactId>
-            <version>${commons.collections4.version}</version>
         </dependency>
         <dependency>
             <groupId>com.danubetech</groupId>
             <artifactId>key-formats-java</artifactId>
-            <version>${key-formats-java.version}</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
@@ -258,49 +171,24 @@
             <scope>compile</scope>
         </dependency>
         <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter-api</artifactId>
-            <version>${junit-jupiter.version}</version>
-            <scope>test</scope>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-annotations</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter-params</artifactId>
-            <version>${junit-jupiter.version}</version>
-            <scope>test</scope>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
         </dependency>
         <dependency>
             <groupId>decentralized-identity</groupId>
             <artifactId>uni-registrar-core</artifactId>
-            <version>${uni-registrar-core.version}</version>
-            <exclusions>
-                <exclusion>
-                    <artifactId>slf4j-log4j12</artifactId>
-                    <groupId>org.slf4j</groupId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.logging.log4j</groupId>
-            <artifactId>log4j-core</artifactId>
-            <version>${apache.log4j.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-api</artifactId>
-            <version>${apache.log4j.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.logging.log4j</groupId>
-            <artifactId>log4j-slf4j-impl</artifactId>
-            <version>${apache.log4j.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mockito</groupId>
-            <artifactId>mockito-core</artifactId>
-            <version>${mockito-core.version}</version>
-            <scope>test</scope>
         </dependency>
     </dependencies>
 </project>
