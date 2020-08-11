@@ -24,14 +24,17 @@ public final class ValidationCommons {
 			if (!configs.isRunMainnet()) {
 				throw new ValidationException("Mainnet is not running");
 			}
+			break;
 		case TESTNET:
 			if (!configs.isRunTestnet()) {
 				throw new ValidationException("Testnet is not running");
 			}
+			break;
 		case REGTESTNET:
 			if (!configs.isRunRegtest()) {
 				throw new ValidationException("Regtestnet is not running");
 			}
+			break;
 		}
 	}
 

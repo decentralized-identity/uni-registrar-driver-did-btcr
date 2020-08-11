@@ -1,7 +1,5 @@
 package uniregistrar.driver.did.btcr.util.validators;
 
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 
@@ -94,17 +92,6 @@ public class ConfigurationValidator {
 
 		log.info("Validating the driver setup...");
 
-//		try {
-//			log.debug("Looking for the BitcoinConnection...");
-//			BitcoinConnection conn = NetworkUtils.getBitcoinConnection(driver, configs);
-//			if (conn == null) {
-//				throw new ConfigurationException("Bitcoin Connection is null");
-//			}
-//		} catch (MalformedURLException e) {
-//			log.error(e.getMessage());
-//			throw new ConfigurationException("BitcoinConnection URL is malformed");
-//		}
-
 		if (configs.isRunTestnet()) {
 			BitcoinJSONRPCClient client = driver.getRpcClient(Chain.TESTNET).getBitcoindRpcClient();
 			if (client == null) {
@@ -140,17 +127,6 @@ public class ConfigurationValidator {
 			}
 			// TODO: Try getting raw TXs
 			log.info("Regtestnet RPC-Client URL: {}", () -> client.rpcURL);
-		}
-
-		InetAddress inetAddress;
-		log.info("Looking for your local IP Address...");
-		try {
-			inetAddress = InetAddress.getLocalHost();
-			log.info("If you use local bitcoin-node:");
-			log.info("Make sure your local IP address is whitelisted in your local node configuration: "
-					+ inetAddress.getHostAddress());
-		} catch (UnknownHostException e) {
-			log.error(e.getMessage());
 		}
 	}
 }
