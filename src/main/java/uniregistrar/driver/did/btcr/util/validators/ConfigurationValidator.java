@@ -107,7 +107,6 @@ public class ConfigurationValidator {
 
 		if (configs.isRunTestnet()) {
 			BitcoinJSONRPCClient client = driver.getRpcClient(Chain.TESTNET).getBitcoindRpcClient();
-			;
 			if (client == null) {
 				throw new ConfigurationException("RPC Client for the Bitcoin testnet is null!");
 			}

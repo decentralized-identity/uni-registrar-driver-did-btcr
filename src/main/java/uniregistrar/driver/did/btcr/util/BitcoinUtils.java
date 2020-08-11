@@ -114,10 +114,6 @@ public final class BitcoinUtils {
 		return cKey;
 	}
 
-	public static Address getAddrStringFromKey(Chain chain, ECKey privateKey, Script.ScriptType scriptType) {
-		return Address.fromKey(BitcoinUtils.chainToNetworkParameters(chain), privateKey, scriptType);
-	}
-
 	public static NetworkParameters chainToNetworkParameters(String chain) {
 		if ("REGTESTNET".equalsIgnoreCase(chain))
 			return RegTestParams.get();
@@ -128,5 +124,9 @@ public final class BitcoinUtils {
 		else {
 			throw new IllegalArgumentException("Unknown chain: " + chain);
 		}
+	}
+
+	public static Address getAddrStringFromKey(Chain chain, ECKey privateKey, Script.ScriptType scriptType) {
+		return Address.fromKey(BitcoinUtils.chainToNetworkParameters(chain), privateKey, scriptType);
 	}
 }

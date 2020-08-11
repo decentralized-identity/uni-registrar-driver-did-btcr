@@ -6,7 +6,6 @@ import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.util.TimeZone;
 
-import info.weboftrust.btctxlookup.Chain;
 import uniregistrar.driver.did.btcr.DriverConfigs;
 
 public final class BTCRUtils {

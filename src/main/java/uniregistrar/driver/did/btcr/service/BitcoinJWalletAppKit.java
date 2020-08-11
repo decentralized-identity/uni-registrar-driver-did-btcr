@@ -53,7 +53,7 @@ public class BitcoinJWalletAppKit extends AbstractBitcoinConnection implements B
 	private final String wPrefix;
 	private final DidBtcrDriver driver;
 	private volatile boolean online = false;
-	private ECKey privKey;
+	private final ECKey privKey;
 	private Script.ScriptType preferredScriptType = Script.ScriptType.P2PKH;
 	private WalletAppKit kit;
 	private List<PeerAddress> peers;

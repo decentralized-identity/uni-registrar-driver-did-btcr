@@ -18,8 +18,8 @@ import org.bitcoinj.wallet.Wallet;
 
 import info.weboftrust.btctxlookup.Chain;
 import uniregistrar.driver.did.btcr.DidBtcrDriver;
-import uniregistrar.driver.did.btcr.util.BitcoinUtils;
 import uniregistrar.driver.did.btcr.DriverConstants;
+import uniregistrar.driver.did.btcr.util.BitcoinUtils;
 
 /**
  * Produces new UTXOs via sending them to UTXO wallet from the server wallet

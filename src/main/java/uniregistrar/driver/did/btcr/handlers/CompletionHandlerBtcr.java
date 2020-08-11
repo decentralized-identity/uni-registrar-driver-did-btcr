@@ -117,6 +117,94 @@ public class CompletionHandlerBtcr implements CompletionHandler {
 		}
 	}
 
+	@Override
+	public void stop() {
+		log.debug("Stopping the completion worker...");
+		if (executors != null && !executors.isTerminated()) {
+			executors.shutdown();
+		}
+	}
+
+	public void completeUpdate(DidBtcrJob job) throws IOException, RegistrationException {
+		Thread.currentThread().setContextClassLoader(driver.getClass().getClassLoader());
+		log.debug("Received an update-completion job: {}", job::getJobId);
+
+		final Chain chain = job.getChain();
+		final String txHash = job.getTransactionHash();
+		final URI didContinuationUri = job.getDidContinuationUri();
+		final ECKey privateKey = job.getChangeKey();
+		final List<Service> addServices = job.getAddServices();
+		final List<PublicKey> addPublicKeys = job.getAddPublicKeys();
+		final List<Authentication> addAuthentications = job.getAddAuthentications();
+		final NetworkParameters params = BitcoinUtils.chainToNetworkParameters(chain);
+
+		final ChainAndLocationData chainAndLocationData = NetworkUtils.getChainAndLocationData(chain, txHash,
+				driver.getRpcClient(chain));
+		final String did = job.getIdentifier();
+
+		if (didContinuationUri != null) {
+			log.debug("Storing the DID Continuation Document with URI: {}", () -> didContinuationUri);
+
+			final DIDDocument didContinuationDocument = DIDDocument.build(did, addPublicKeys, addAuthentications,
+					addServices);
+
+			log.debug("DIDDocument created for DID: {}", didContinuationDocument::getId);
+			final DIDDocContinuation didContinuation = configs.getDidDocContinuation();
+
+			try {
+				didContinuation.storeDIDDocContinuation(didContinuationUri, didContinuationDocument);
+			} catch (IOException e) {
+				throw new RegistrationException(e);
+			}
+		} else {
+			throw new RegistrationException("Update has no didContinuationUri!");
+		}
+
+		Map<String, Object> secret = new LinkedHashMap<>();
+
+		if (job.isRotateKey()) {
+			final String publicKeyHex = privateKey.getPublicKeyAsHex();
+			final String privateKeyHex = privateKey.getPrivateKeyAsHex();
+			final String privateKeyWif = privateKey.getPrivateKeyAsWiF(params);
+			final JWK jsonWebKey = ECKeyUtils.privateKeyToJWK(privateKey);
+			final String publicKeyDIDURL = BTCRUtils.identifierToPublicKeyDIDURL(did);
+
+			final List<Map<String, Object>> jsonKeys = new ArrayList<>();
+
+			final Map<String, Object> jsonKey = new LinkedHashMap<>();
+			jsonKey.put("publicKeyHex", publicKeyHex);
+			jsonKey.put("privateKeyHex", privateKeyHex);
+			jsonKey.put("privateKeyWif", privateKeyWif);
+			jsonKey.put("privateKeyJwk", jsonWebKey.toJSONObject());
+			jsonKey.put("publicKeyDIDURL", publicKeyDIDURL);
+			jsonKeys.add(jsonKey);
+
+			secret.put("updateKeys", jsonKeys);
+		}
+
+		// Update is finished. Prepare the result.
+		final Map<String, Object> methodMetadata = new LinkedHashMap<>();
+		methodMetadata.put("updateCompletionTime", BTCRUtils.getTimeStamp());
+		methodMetadata.put("chain", chain);
+		methodMetadata.put("transactionHash", txHash);
+		methodMetadata.put("blockHeight", chainAndLocationData.getLocationData().getBlockHeight());
+		methodMetadata.put("transactionPosition", chainAndLocationData.getLocationData().getTransactionPosition());
+		methodMetadata.put("didContinuationUri", "" + didContinuationUri);
+		methodMetadata.put("operation", "update");
+
+		final UpdateState state = UpdateState.build();
+
+		SetBtcrRegisterStateFinished.setStateFinished(state, did, secret);
+		state.setMethodMetadata(methodMetadata);
+		state.setJobId(job.getJobId());
+
+		log.info("Update state for the job {} is completed", job::getJobId);
+		log.debug("Update State: {}", state::toString);
+		driver.jobCompleted(job.getJobId());
+		driver.getUpdateStates().put(job.getJobId(), state);
+
+	}
+
 	public void completeRegistration(DidBtcrJob job) throws RegistrationException, IOException {
 		Thread.currentThread().setContextClassLoader(driver.getClass().getClassLoader());
 		log.debug("Received a register-completion job: {}", job::getJobId);
@@ -217,86 +305,6 @@ public class CompletionHandlerBtcr implements CompletionHandler {
 
 	}
 
-	public void completeUpdate(DidBtcrJob job) throws IOException, RegistrationException {
-		Thread.currentThread().setContextClassLoader(driver.getClass().getClassLoader());
-		log.debug("Received an update-completion job: {}", job::getJobId);
-
-		final Chain chain = job.getChain();
-		final String txHash = job.getTransactionHash();
-		final URI didContinuationUri = job.getDidContinuationUri();
-		final ECKey privateKey = job.getChangeKey();
-		final List<Service> addServices = job.getAddServices();
-		final List<PublicKey> addPublicKeys = job.getAddPublicKeys();
-		final List<Authentication> addAuthentications = job.getAddAuthentications();
-		final NetworkParameters params = BitcoinUtils.chainToNetworkParameters(chain);
-
-		final ChainAndLocationData chainAndLocationData = NetworkUtils.getChainAndLocationData(chain, txHash,
-				driver.getRpcClient(chain));
-		final String did = job.getIdentifier();
-
-		if (didContinuationUri != null) {
-			log.debug("Storing the DID Continuation Document with URI: {}", () -> didContinuationUri);
-
-			final DIDDocument didContinuationDocument = DIDDocument.build(did, addPublicKeys, addAuthentications,
-					addServices);
-
-			log.debug("DIDDocument created for DID: {}", didContinuationDocument::getId);
-			final DIDDocContinuation didContinuation = configs.getDidDocContinuation();
-
-			try {
-				didContinuation.storeDIDDocContinuation(didContinuationUri, didContinuationDocument);
-			} catch (IOException e) {
-				throw new RegistrationException(e);
-			}
-		} else {
-			throw new RegistrationException("Update has no didContinuationUri!");
-		}
-
-		Map<String, Object> secret = new LinkedHashMap<>();
-
-		if (job.isRotateKey()) {
-			final String publicKeyHex = privateKey.getPublicKeyAsHex();
-			final String privateKeyHex = privateKey.getPrivateKeyAsHex();
-			final String privateKeyWif = privateKey.getPrivateKeyAsWiF(params);
-			final JWK jsonWebKey = ECKeyUtils.privateKeyToJWK(privateKey);
-			final String publicKeyDIDURL = BTCRUtils.identifierToPublicKeyDIDURL(did);
-
-			final List<Map<String, Object>> jsonKeys = new ArrayList<>();
-
-			final Map<String, Object> jsonKey = new LinkedHashMap<>();
-			jsonKey.put("publicKeyHex", publicKeyHex);
-			jsonKey.put("privateKeyHex", privateKeyHex);
-			jsonKey.put("privateKeyWif", privateKeyWif);
-			jsonKey.put("privateKeyJwk", jsonWebKey.toJSONObject());
-			jsonKey.put("publicKeyDIDURL", publicKeyDIDURL);
-			jsonKeys.add(jsonKey);
-
-			secret.put("updateKeys", jsonKeys);
-		}
-
-		// Update is finished. Prepare the result.
-		final Map<String, Object> methodMetadata = new LinkedHashMap<>();
-		methodMetadata.put("updateCompletionTime", BTCRUtils.getTimeStamp());
-		methodMetadata.put("chain", chain);
-		methodMetadata.put("transactionHash", txHash);
-		methodMetadata.put("blockHeight", chainAndLocationData.getLocationData().getBlockHeight());
-		methodMetadata.put("transactionPosition", chainAndLocationData.getLocationData().getTransactionPosition());
-		methodMetadata.put("didContinuationUri", "" + didContinuationUri);
-		methodMetadata.put("operation", "update");
-
-		final UpdateState state = UpdateState.build();
-
-		SetBtcrRegisterStateFinished.setStateFinished(state, did, secret);
-		state.setMethodMetadata(methodMetadata);
-		state.setJobId(job.getJobId());
-
-		log.info("Update state for the job {} is completed", job::getJobId);
-		log.debug("Update State: {}", state::toString);
-		driver.jobCompleted(job.getJobId());
-		driver.getUpdateStates().put(job.getJobId(), state);
-
-	}
-
 	public void completeDeactivate(DidBtcrJob job) throws IOException, RegistrationException {
 		Thread.currentThread().setContextClassLoader(driver.getClass().getClassLoader());
 		log.debug("Received an deactivation-completion job: {}", job::getJobId);
@@ -357,14 +365,6 @@ public class CompletionHandlerBtcr implements CompletionHandler {
 		log.debug("Deactivation State: {}", state::toString);
 		driver.jobCompleted(job.getJobId());
 		driver.getDeactivateStates().put(job.getJobId(), state);
-	}
-
-	@Override
-	public void stop() {
-		log.debug("Stopping the completion worker...");
-		if (executors != null && !executors.isTerminated()) {
-			executors.shutdown();
-		}
 	}
 
 }
