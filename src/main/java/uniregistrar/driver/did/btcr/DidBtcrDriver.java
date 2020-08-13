@@ -102,6 +102,8 @@ public class DidBtcrDriver extends AbstractDriver implements Driver {
 	private BitcoinConfirmationTracker confirmationTrackerTestnet;
 	private BitcoinConfirmationTracker confirmationTrackerMainnet;
 
+	private Map<String, Object> propsToShow = null;
+
 	public DidBtcrDriver() {
 		this(new Properties());
 	}
@@ -752,11 +754,19 @@ public class DidBtcrDriver extends AbstractDriver implements Driver {
 
 	@Override
 	public Map<String, Object> properties() {
-		final ObjectMapper mapper = new ObjectMapper();
-		mapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
-		mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-		return mapper.convertValue(configs, new TypeReference<Map<String, Object>>() {
-		});
+
+		if(propsToShow == null){
+			final ObjectMapper mapper = new ObjectMapper();
+			mapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
+			mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+			propsToShow = mapper.convertValue(configs, new TypeReference<Map<String, Object>>() {});
+			propsToShow.put("certificateMainnet","................................");
+			propsToShow.put("certificateTestnet", "................................");
+			propsToShow.put("rpcUrlMainnet","................................");
+			propsToShow.put("rpcUrlTestnet", "................................");
+		}
+
+		return propsToShow;
 	}
 
 	public void completionReady(String jobId) {
