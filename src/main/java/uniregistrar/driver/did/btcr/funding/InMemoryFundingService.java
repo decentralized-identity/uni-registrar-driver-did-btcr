@@ -175,6 +175,9 @@ public class InMemoryFundingService implements FundingService {
 	public boolean canServerFund() {
 		Context.propagate(driver.getContext(chain));
 		Wallet wallet = driver.getUtxoWallet(chain);
+		if(wallet == null){
+			return false;
+		}
 		return wallet.calculateAllSpendCandidates(true, true).size() > 0;
 	}
 
