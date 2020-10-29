@@ -24,7 +24,7 @@
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<java.version>11</java.version>
 		<bitcoinj-core.version>0.15.8</bitcoinj-core.version>
-		<btc-tx-lookup-java.version>0.2-SNAPSHOT</btc-tx-lookup-java.version>
+		<btc-tx-lookup-java.version>0.2.0</btc-tx-lookup-java.version>
 	</properties>
 
 	<profiles>
