@@ -11,6 +11,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import foundation.identity.did.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.bitcoinj.core.ECKey;
@@ -18,10 +19,6 @@ import org.bitcoinj.core.NetworkParameters;
 
 import com.nimbusds.jose.jwk.JWK;
 
-import did.Authentication;
-import did.DIDDocument;
-import did.PublicKey;
-import did.Service;
 import info.weboftrust.btctxlookup.Chain;
 import info.weboftrust.btctxlookup.ChainAndLocationData;
 import uniregistrar.RegistrationException;
@@ -134,7 +131,7 @@ public class CompletionHandlerBtcr implements CompletionHandler {
 		final URI didContinuationUri = job.getDidContinuationUri();
 		final ECKey privateKey = job.getChangeKey();
 		final List<Service> addServices = job.getAddServices();
-		final List<PublicKey> addPublicKeys = job.getAddPublicKeys();
+		final List<VerificationMethod> verificationMethods = job.getAddVerificationMethods();
 		final List<Authentication> addAuthentications = job.getAddAuthentications();
 		final NetworkParameters params = BitcoinUtils.chainToNetworkParameters(chain);
 
@@ -145,8 +142,9 @@ public class CompletionHandlerBtcr implements CompletionHandler {
 		if (didContinuationUri != null) {
 			log.debug("Storing the DID Continuation Document with URI: {}", () -> didContinuationUri);
 
-			final DIDDocument didContinuationDocument = DIDDocument.build(did, addPublicKeys, addAuthentications,
-					addServices);
+			final DIDDocument didContinuationDocument = DIDDocument.builder().id(URI.create(did))
+					.verificationMethods(verificationMethods).authentications(addAuthentications).services(addServices)
+					.build();
 
 			log.debug("DIDDocument created for DID: {}", didContinuationDocument::getId);
 			final DIDDocContinuation didContinuation = configs.getDidDocContinuation();
@@ -214,7 +212,7 @@ public class CompletionHandlerBtcr implements CompletionHandler {
 		final URI didContinuationUri = job.getDidContinuationUri();
 		final ECKey privateKey = job.getPrivateKey();
 		final List<Service> addServices = job.getAddServices();
-		final List<PublicKey> addPublicKeys = job.getAddPublicKeys();
+		final List<VerificationMethod> verificationMethods = job.getAddVerificationMethods();
 		final List<Authentication> addAuthentications = job.getAddAuthentications();
 		final NetworkParameters params = BitcoinUtils.chainToNetworkParameters(chain);
 
@@ -226,8 +224,9 @@ public class CompletionHandlerBtcr implements CompletionHandler {
 		if (didContinuationUri != null) {
 			log.debug("Storing the DID Continuation Document with URI: {}", didContinuationUri::toString);
 
-			final DIDDocument didContinuationDocument = DIDDocument.build(did, addPublicKeys, addAuthentications,
-					addServices);
+			final DIDDocument didContinuationDocument = DIDDocument.builder().id(URI.create(did))
+					.verificationMethods(verificationMethods).authentications(addAuthentications).services(addServices)
+					.build();
 
 			log.debug("Created DIDDocument for DID: {}", didContinuationDocument::getId);
 			final DIDDocContinuation didContinuation = configs.getDidDocContinuation();

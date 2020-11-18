@@ -1,8 +1,9 @@
 package uniregistrar.driver.did.btcr.diddoccontinuation;
 
+import foundation.identity.did.DIDDocument;
+
 import java.util.UUID;
 
-import did.DIDDocument;
 
 public class RandomDIDDocFileNameStrategy implements DIDDocFileNameStrategy {
 

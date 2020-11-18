@@ -6,6 +6,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import foundation.identity.did.DIDDocument;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -17,7 +18,6 @@ import org.bitcoinj.script.ScriptPattern;
 
 import com.google.common.base.Preconditions;
 
-import did.DIDDocument;
 import info.weboftrust.btctxlookup.BitcoinClientID;
 import info.weboftrust.btctxlookup.Chain;
 import info.weboftrust.btctxlookup.ChainAndTxid;
@@ -178,8 +178,9 @@ public class UpdateHandlerBtcr implements UpdateHandler {
 		final DIDDocument doc = request.getDidDocument();
 
 		DidBtcrJob job = new DidBtcrJob(chain, sent.getTxId().toString(), didContinuationUri, opFund.getFundingKey(),
-				opFund.getChangeKey(), doc == null ? null : doc.getServices(), doc == null ? null : doc.getPublicKeys(),
-				doc == null ? null : doc.getAuthentications(), JobType.UPDATE, rotateKey, opFund.getFundingType());
+				opFund.getChangeKey(), doc == null ? null : doc.getServices(),
+				doc == null ? null : doc.getVerificationMethods(), doc == null ? null : doc.getAuthentications(),
+				JobType.UPDATE, rotateKey, opFund.getFundingType());
 
 		job.setIdentifier(identifier);
 

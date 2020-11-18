@@ -41,7 +41,7 @@ public class RegisterHandlerBtcr implements RegisterHandler {
 
 	/**
 	 * Constructor for RegisterHandler
-	 * 
+	 *
 	 * @param driver DidBtcrDriver
 	 */
 	public RegisterHandlerBtcr(DidBtcrDriver driver) {
@@ -124,8 +124,8 @@ public class RegisterHandlerBtcr implements RegisterHandler {
 
 		if (request.getDidDocument() != null && ((request.getDidDocument().getServices() != null
 				&& !request.getDidDocument().getServices().isEmpty())
-				|| (request.getDidDocument().getPublicKeys() != null
-						&& !request.getDidDocument().getPublicKeys().isEmpty())
+				|| (request.getDidDocument().getVerificationMethods() != null
+						&& !request.getDidDocument().getVerificationMethods().isEmpty())
 				|| (request.getDidDocument().getAuthentications() != null
 						&& !request.getDidDocument().getAuthentications().isEmpty()))) {
 			log.debug("Request is customized, preparing a did-continuation document...");
@@ -194,7 +194,7 @@ public class RegisterHandlerBtcr implements RegisterHandler {
 		// REGISTER STATE WAIT: JOBID
 		final DidBtcrJob job = new DidBtcrJob(chain, txID, didContinuationUri, opFund.getFundingKey(), changeKey,
 				request.getDidDocument() == null ? null : request.getDidDocument().getServices(),
-				request.getDidDocument() == null ? null : request.getDidDocument().getPublicKeys(),
+				request.getDidDocument() == null ? null : request.getDidDocument().getVerificationMethods(),
 				request.getDidDocument() == null ? null : request.getDidDocument().getAuthentications(),
 				JobType.REGISTER, rotateKey, opFund.getFundingType());
 

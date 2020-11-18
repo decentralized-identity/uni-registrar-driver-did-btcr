@@ -1,6 +1,6 @@
 package uniregistrar.driver.did.btcr.diddoccontinuation;
 
-import did.DIDDocument;
+import foundation.identity.did.DIDDocument;
 
 public interface DIDDocFileNameStrategy {
 

@@ -4,12 +4,9 @@ import java.io.*;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 
+import foundation.identity.did.DIDDocument;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-
-import com.github.jsonldjava.core.JsonLdError;
-
-import did.DIDDocument;
 
 public class LocalFileDIDDocContinuation implements DIDDocContinuation {
 
@@ -60,8 +57,6 @@ public class LocalFileDIDDocContinuation implements DIDDocContinuation {
 		try (Writer fileWriter = new OutputStreamWriter(new FileOutputStream(filePath), StandardCharsets.UTF_8)) {
 			fileWriter.write(didContinuationDocument.toJson());
 			fileWriter.flush();
-		} catch (JsonLdError ex) {
-			throw new IOException("JSON-LD problem: " + ex.getMessage(), ex);
 		}
 	}
 

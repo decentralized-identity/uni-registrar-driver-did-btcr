@@ -1,9 +1,9 @@
 package uniregistrar.driver.did.btcr.diddoccontinuation;
 
+import foundation.identity.did.DIDDocument;
+
 import java.io.IOException;
 import java.net.URI;
-
-import did.DIDDocument;
 
 public interface DIDDocContinuation {
 
@@ -18,7 +18,7 @@ public interface DIDDocContinuation {
 	 *
 	 * @param didContinuationUri      {@link URI} to use for storing
 	 *                                {@link DIDDocument}}
-	 * 
+	 *
 	 * @param didContinuationDocument DID Continuation Document in form of
 	 *                                {@link DIDDocument}
 	 * @throws IOException {@link IOException} IOException

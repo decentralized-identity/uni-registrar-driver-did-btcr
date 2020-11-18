@@ -6,13 +6,13 @@ import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
+import foundation.identity.did.Authentication;
+import foundation.identity.did.Service;
+import foundation.identity.did.VerificationMethod;
 import org.bitcoinj.core.ECKey;
 
 import com.google.common.base.MoreObjects;
 
-import did.Authentication;
-import did.PublicKey;
-import did.Service;
 import info.weboftrust.btctxlookup.Chain;
 import uniregistrar.driver.did.btcr.enums.FundingType;
 import uniregistrar.driver.did.btcr.enums.JobType;
@@ -25,7 +25,7 @@ public class DidBtcrJob {
 	private final ECKey privateKey;
 	private final ECKey changeKey;
 	private final List<Service> addServices;
-	private final List<PublicKey> addPublicKeys;
+	private final List<VerificationMethod> addVerificationMethods;
 	private final List<Authentication> addAuthentications;
 	private final JobType jobType;
 	private final boolean rotateKey;
@@ -34,15 +34,16 @@ public class DidBtcrJob {
 	private String identifier = null;
 
 	public DidBtcrJob(Chain chain, String transactionHash, URI didContinuationUri, ECKey privateKey, ECKey changeKey,
-			List<Service> addServices, List<PublicKey> addPublicKeys, List<Authentication> addAuthentications,
-			JobType jobType, boolean rotateKey, FundingType fundingType) {
+			List<Service> addServices, List<VerificationMethod> addVerificationMethods,
+			List<Authentication> addAuthentications, JobType jobType, boolean rotateKey, FundingType fundingType) {
 		this.jobId = UUID.randomUUID().toString();
 		this.chain = chain;
 		this.transactionHash = transactionHash;
 		this.didContinuationUri = didContinuationUri;
 		this.privateKey = privateKey;
 		this.addServices = addServices == null ? null : Collections.unmodifiableList(addServices);
-		this.addPublicKeys = addPublicKeys == null ? null : Collections.unmodifiableList(addPublicKeys);
+		this.addVerificationMethods = addVerificationMethods == null ? null
+				: Collections.unmodifiableList(addVerificationMethods);
 		this.addAuthentications = addAuthentications == null ? null : Collections.unmodifiableList(addAuthentications);
 		this.jobType = jobType;
 		this.changeKey = changeKey;
@@ -102,8 +103,8 @@ public class DidBtcrJob {
 		return addServices;
 	}
 
-	public List<PublicKey> getAddPublicKeys() {
-		return addPublicKeys;
+	public List<VerificationMethod> getAddVerificationMethods() {
+		return addVerificationMethods;
 	}
 
 	public List<Authentication> getAddAuthentications() {
@@ -119,7 +120,7 @@ public class DidBtcrJob {
 		return MoreObjects.toStringHelper(this).add("jobId", jobId).add("identifier", identifier)
 				.add("chain", chain.toString()).add("transactionHash", transactionHash)
 				.add("didContinuationUri", didContinuationUri).add("privateKey", privateKey).add("changeKey", changeKey)
-				.add("addServices", addServices).add("addPublicKeys", addPublicKeys)
+				.add("addServices", addServices).add("addVerificationMethods", addVerificationMethods)
 				.add("addAuthentications", addAuthentications).add("jobType", jobType).add("rotateKey", rotateKey)
 				.add("creationTime", creationTime).toString();
 	}
