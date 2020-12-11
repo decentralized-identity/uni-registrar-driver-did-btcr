@@ -14,6 +14,7 @@ import java.util.concurrent.TimeUnit;
 import foundation.identity.did.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.bitcoinj.core.Base58;
 import org.bitcoinj.core.ECKey;
 import org.bitcoinj.core.NetworkParameters;
 
@@ -241,6 +242,7 @@ public class CompletionHandlerBtcr implements CompletionHandler {
 		final String publicKeyHex = privateKey.getPublicKeyAsHex();
 		final String privateKeyHex = privateKey.getPrivateKeyAsHex();
 		final String privateKeyWif = privateKey.getPrivateKeyAsWiF(params);
+		final String privateKeyBase58 = Base58.encode(privateKey.getPrivKeyBytes());
 		final JWK jsonWebKey = ECKeyUtils.privateKeyToJWK(privateKey);
 		final String publicKeyDIDURL = BTCRUtils.identifierToPublicKeyDIDURL(did);
 
@@ -249,6 +251,7 @@ public class CompletionHandlerBtcr implements CompletionHandler {
 		final String publicKeyHex2 = changeKey.getPublicKeyAsHex();
 		final String privateKeyHex2 = changeKey.getPrivateKeyAsHex();
 		final String privateKeyWif2 = changeKey.getPrivateKeyAsWiF(params);
+		final String privateKeyBase582 = Base58.encode(changeKey.getPrivKeyBytes());
 		final JWK jsonWebKey2 = ECKeyUtils.privateKeyToJWK(changeKey);
 
 		final List<Map<String, Object>> jsonKeys = new ArrayList<>();
@@ -258,11 +261,12 @@ public class CompletionHandlerBtcr implements CompletionHandler {
 		jsonKey.put("privateKeyHex", privateKeyHex);
 		jsonKey.put("privateKeyWif", privateKeyWif);
 		jsonKey.put("privateKeyJwk", jsonWebKey.toJSONObject());
+		jsonKey.put("privateKeyBase58", privateKeyBase58);
 		jsonKey.put("publicKeyDIDURL", publicKeyDIDURL);
 		jsonKeys.add(jsonKey);
 
 		final Map<String, Object> secret = new LinkedHashMap<>();
-		secret.put("register_keys", jsonKeys);
+		secret.put("keys", jsonKeys);
 
 		final List<Map<String, Object>> jsonKeys2 = new ArrayList<>();
 
@@ -271,6 +275,7 @@ public class CompletionHandlerBtcr implements CompletionHandler {
 		jsonKey2.put("privateKeyHex", privateKeyHex2);
 		jsonKey2.put("privateKeyWif", privateKeyWif2);
 		jsonKey2.put("privateKeyJwk", jsonWebKey2.toJSONObject());
+		jsonKey2.put("privateKeyBase58", privateKeyBase582);
 		jsonKeys2.add(jsonKey2);
 
 		secret.put("updateKeys", jsonKeys2);
