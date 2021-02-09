@@ -1,25 +1,25 @@
 package uniregistrar.driver.did.btcr.state;
 
 import uniregistrar.state.DeactivateState;
-import uniregistrar.state.RegisterState;
+import uniregistrar.state.CreateState;
 import uniregistrar.state.UpdateState;
 
-public final class SetRegisterStateActionFund {
+public final class SetCreateStateActionFund {
 
-	private SetRegisterStateActionFund() {
+	private SetCreateStateActionFund() {
 
 	}
 
-	public static String getStateActionFundBitcoinAddress(RegisterState registerState) {
+	public static String getStateActionFundBitcoinAddress(CreateState createState) {
 
-		if (!isStateActionFund(registerState))
+		if (!isStateActionFund(createState))
 			return null;
-		return (String) registerState.getDidState().get("bitcoinAddress");
+		return (String) createState.getDidState().get("bitcoinAddress");
 	}
 
-	public static boolean isStateActionFund(RegisterState registerState) {
+	public static boolean isStateActionFund(CreateState createState) {
 
-		return "fund".equals(SetBtcrRegisterStateAction.getStateAction(registerState));
+		return "fund".equals(SetBtcrCreateStateAction.getStateAction(createState));
 	}
 
 	public static String getStateActionFundBitcoinAddress(UpdateState updateState) {
@@ -31,7 +31,7 @@ public final class SetRegisterStateActionFund {
 
 	public static boolean isStateActionFund(UpdateState updateState) {
 
-		return "fund".equals(SetBtcrRegisterStateAction.getStateAction(updateState));
+		return "fund".equals(SetBtcrCreateStateAction.getStateAction(updateState));
 	}
 
 	public static String getStateActionFundBitcoinAddress(DeactivateState deactivateState) {
@@ -43,14 +43,14 @@ public final class SetRegisterStateActionFund {
 
 	public static boolean isStateActionFund(DeactivateState deactivateState) {
 
-		return "fund".equals(SetBtcrRegisterStateAction.getStateAction(deactivateState));
+		return "fund".equals(SetBtcrCreateStateAction.getStateAction(deactivateState));
 	}
 
-	public static String getStateActionFundSatoshis(RegisterState registerState) {
+	public static String getStateActionFundSatoshis(CreateState createState) {
 
-		if (!isStateActionFund(registerState))
+		if (!isStateActionFund(createState))
 			return null;
-		return (String) registerState.getDidState().get("satoshis");
+		return (String) createState.getDidState().get("satoshis");
 	}
 
 	public static String getStateActionFundSatoshis(UpdateState updateState) {
@@ -67,23 +67,23 @@ public final class SetRegisterStateActionFund {
 		return (String) deactivateState.getDidState().get("satoshis");
 	}
 
-	public static void setStateActionFund(RegisterState registerState, String bitcoinAddress, String satoshis) {
+	public static void setStateActionFund(CreateState createState, String bitcoinAddress, String satoshis) {
 
-		SetBtcrRegisterStateAction.setStateAction(registerState, "fund");
-		registerState.getDidState().put("bitcoinAddress", bitcoinAddress);
-		registerState.getDidState().put("satoshis", satoshis);
+		SetBtcrCreateStateAction.setStateAction(createState, "fund");
+		createState.getDidState().put("bitcoinAddress", bitcoinAddress);
+		createState.getDidState().put("satoshis", satoshis);
 	}
 
 	public static void setStateActionFund(UpdateState updateState, String bitcoinAddress, String satoshis) {
 
-		SetBtcrRegisterStateAction.setStateAction(updateState, "fund");
+		SetBtcrCreateStateAction.setStateAction(updateState, "fund");
 		updateState.getDidState().put("bitcoinAddress", bitcoinAddress);
 		updateState.getDidState().put("satoshis", satoshis);
 	}
 
 	public static void setStateActionFund(DeactivateState deactivateState, String bitcoinAddress, String satoshis) {
 
-		SetBtcrRegisterStateAction.setStateAction(deactivateState, "fund");
+		SetBtcrCreateStateAction.setStateAction(deactivateState, "fund");
 		deactivateState.getDidState().put("bitcoinAddress", bitcoinAddress);
 		deactivateState.getDidState().put("satoshis", satoshis);
 	}

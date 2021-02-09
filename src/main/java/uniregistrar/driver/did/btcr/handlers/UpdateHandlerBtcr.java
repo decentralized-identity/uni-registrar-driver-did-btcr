@@ -30,7 +30,7 @@ import uniregistrar.driver.did.btcr.DriverConfigs;
 import uniregistrar.driver.did.btcr.enums.JobType;
 import uniregistrar.driver.did.btcr.funding.BtcrFund;
 import uniregistrar.driver.did.btcr.funding.FundingException;
-import uniregistrar.driver.did.btcr.state.SetRegisterStateWaitConfirm;
+import uniregistrar.driver.did.btcr.state.SetCreateStateWaitConfirm;
 import uniregistrar.driver.did.btcr.util.*;
 import uniregistrar.request.UpdateRequest;
 import uniregistrar.state.UpdateState;
@@ -202,7 +202,7 @@ public class UpdateHandlerBtcr implements UpdateHandler {
 
 		updateState.setJobId(job.getJobId());
 		updateState.setMethodMetadata(methodMetadata);
-		SetRegisterStateWaitConfirm.setStateWaitConfirm(updateState, String
+		SetCreateStateWaitConfirm.setStateWaitConfirm(updateState, String
 				.valueOf(BTCRUtils.estimateWaitingTime(configs, driver.getWalletService(chain).getBlockTimeSeconds())));
 		updateState.setJobId(cJobId);
 

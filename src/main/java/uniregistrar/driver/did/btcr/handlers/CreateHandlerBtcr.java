@@ -24,27 +24,27 @@ import uniregistrar.driver.did.btcr.enums.JobType;
 import uniregistrar.driver.did.btcr.funding.BtcrFund;
 import uniregistrar.driver.did.btcr.funding.FundingException;
 import uniregistrar.driver.did.btcr.funding.FundingService;
-import uniregistrar.driver.did.btcr.state.SetRegisterStateWaitConfirm;
+import uniregistrar.driver.did.btcr.state.SetCreateStateWaitConfirm;
 import uniregistrar.driver.did.btcr.util.*;
-import uniregistrar.request.RegisterRequest;
-import uniregistrar.state.RegisterState;
+import uniregistrar.request.CreateRequest;
+import uniregistrar.state.CreateState;
 
 /**
- * Class to handle registration requests
+ * Class to handle create requests
  */
-public class RegisterHandlerBtcr implements RegisterHandler {
+public class CreateHandlerBtcr implements CreateHandler {
 
-	private static final Logger log = LogManager.getLogger(RegisterHandlerBtcr.class);
+	private static final Logger log = LogManager.getLogger(CreateHandlerBtcr.class);
 
 	private final DidBtcrDriver driver;
 	private final DriverConfigs configs;
 
 	/**
-	 * Constructor for RegisterHandler
+	 * Constructor for CreateHandler
 	 *
 	 * @param driver DidBtcrDriver
 	 */
-	public RegisterHandlerBtcr(DidBtcrDriver driver) {
+	public CreateHandlerBtcr(DidBtcrDriver driver) {
 		this.driver = driver;
 		this.configs = driver.getConfigs();
 	}
@@ -55,7 +55,7 @@ public class RegisterHandlerBtcr implements RegisterHandler {
 	 * @throws RegistrationException Registration exception
 	 */
 	@Override
-	public RegisterState handle(RegisterRequest request) throws RegistrationException {
+	public CreateState handle(CreateRequest request) throws RegistrationException {
 		// If no chain is provided default to TESTNET
 		final Chain chain = Chain.fromString(ParsingUtils.parseChain(request.getOptions()));
 		log.debug("Request will be processed on chain: {}", () -> chain);
@@ -191,19 +191,19 @@ public class RegisterHandlerBtcr implements RegisterHandler {
 
 		ECKey changeKey = opFund.getChangeKey();
 
-		// REGISTER STATE WAIT: JOBID
+		// CREATE STATE WAIT: JOBID
 		final DidBtcrJob job = new DidBtcrJob(chain, txID, didContinuationUri, opFund.getFundingKey(), changeKey,
 				request.getDidDocument() == null ? null : request.getDidDocument().getServices(),
 				request.getDidDocument() == null ? null : request.getDidDocument().getVerificationMethods(),
 				request.getDidDocument() == null ? null : request.getDidDocument().getAuthentications(),
-				JobType.REGISTER, rotateKey, opFund.getFundingType());
+				JobType.CREATE, rotateKey, opFund.getFundingType());
 
 		final String cJobId = job.getJobId();
 
 		// follow transaction state
 		driver.getBitcoinConfirmationTracker(chain).followTransaction(cJobId, sent.getTxId().toString());
 
-		// REGISTER STATE WAIT: METHOD METADATA
+		// CREATE STATE WAIT: METHOD METADATA
 
 		String publicKeyHex;
 		if (opFund.getChangeKey() == null) {
@@ -213,7 +213,7 @@ public class RegisterHandlerBtcr implements RegisterHandler {
 		publicKeyHex = changeKey.getPublicKeyAsHex();
 
 		final Map<String, Object> methodMetadata = new LinkedHashMap<>();
-		methodMetadata.put("registerInitTime", BTCRUtils.getTimeStamp());
+		methodMetadata.put("createInitTime", BTCRUtils.getTimeStamp());
 		methodMetadata.put("chain", chain.toString());
 		methodMetadata.put("transactionHash", txID);
 		methodMetadata.put("balance", opFund.getAmount()
@@ -224,22 +224,22 @@ public class RegisterHandlerBtcr implements RegisterHandler {
 
 		// done
 
-		final RegisterState state = RegisterState.build();
+		final CreateState state = CreateState.build();
 
-		SetRegisterStateWaitConfirm.setStateWaitConfirm(state, String
+		SetCreateStateWaitConfirm.setStateWaitConfirm(state, String
 				.valueOf(BTCRUtils.estimateWaitingTime(configs, driver.getWalletService(chain).getBlockTimeSeconds())));
 		state.setJobId(job.getJobId());
 		state.setMethodMetadata(methodMetadata);
 
 		state.setJobId(job.getJobId());
 		driver.addNewJob(job);
-		driver.getRegisterStates().put(cJobId, state);
+		driver.getCreateStates().put(cJobId, state);
 
 		if (opFund.getFundingType() == FundingType.SERVER) {
 			driver.removeUtxoKey(opFund.getFundingKey(), chain);
 		}
 
-		log.debug("First phase of the registration is finished. Register state is: {}", () -> state);
+		log.debug("First phase of the registration is finished. Create state is: {}", () -> state);
 
 		return state;
 	}

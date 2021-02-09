@@ -8,13 +8,13 @@ import com.google.common.base.Preconditions;
  * @see uniregistrar.driver.did.btcr.DidBtcrJob
  */
 public enum JobType {
-	REGISTER, UPDATE, DEACTIVATE;
+	CREATE, UPDATE, DEACTIVATE;
 
 	public static JobType fromString(String jobType) {
 		Preconditions.checkNotNull(jobType, "Job type type is null");
 		switch (jobType.toUpperCase()) {
-		case "REGISTER":
-			return REGISTER;
+		case "CREATE":
+			return CREATE;
 		case "UPDATE":
 			return UPDATE;
 		case "DEACTIVATE":

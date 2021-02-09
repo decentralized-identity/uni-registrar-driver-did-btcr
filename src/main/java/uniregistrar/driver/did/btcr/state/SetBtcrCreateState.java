@@ -1,17 +1,17 @@
 package uniregistrar.driver.did.btcr.state;
 
 import uniregistrar.state.DeactivateState;
-import uniregistrar.state.RegisterState;
+import uniregistrar.state.CreateState;
 import uniregistrar.state.UpdateState;
 
-public final class SetBtcrRegisterState {
-	private SetBtcrRegisterState() {
+public final class SetBtcrCreateState {
+	private SetBtcrCreateState() {
 
 	}
 
-	public static String getState(RegisterState registerState) {
+	public static String getState(CreateState createState) {
 
-		return (String) registerState.getDidState().get("state");
+		return (String) createState.getDidState().get("state");
 	}
 
 	public static String getState(UpdateState updateState) {
@@ -24,9 +24,9 @@ public final class SetBtcrRegisterState {
 		return (String) deactivateState.getDidState().get("state");
 	}
 
-	public static void setState(RegisterState registerState, String state) {
+	public static void setState(CreateState createState, String state) {
 
-		registerState.getDidState().put("state", state);
+		createState.getDidState().put("state", state);
 	}
 
 	public static void setState(UpdateState updateState, String state) {

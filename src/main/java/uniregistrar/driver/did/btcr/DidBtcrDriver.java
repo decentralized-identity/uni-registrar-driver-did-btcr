@@ -38,7 +38,7 @@ import uniregistrar.driver.did.btcr.handlers.*;
 import uniregistrar.driver.did.btcr.service.BitcoinJWalletAppKit;
 import uniregistrar.driver.did.btcr.service.ExecutorProvider;
 import uniregistrar.driver.did.btcr.service.UTXOProducer;
-import uniregistrar.driver.did.btcr.state.SetBtcrRegisterStateFailed;
+import uniregistrar.driver.did.btcr.state.SetBtcrCreateStateFailed;
 import uniregistrar.driver.did.btcr.transaction.BitcoinConfirmationTracker;
 import uniregistrar.driver.did.btcr.util.Configurator;
 import uniregistrar.driver.did.btcr.util.ErrorMessages;
@@ -46,17 +46,17 @@ import uniregistrar.driver.did.btcr.util.NetworkUtils;
 import uniregistrar.driver.did.btcr.util.ParsingUtils;
 import uniregistrar.driver.did.btcr.util.validators.*;
 import uniregistrar.request.DeactivateRequest;
-import uniregistrar.request.RegisterRequest;
+import uniregistrar.request.CreateRequest;
 import uniregistrar.request.UpdateRequest;
 import uniregistrar.state.DeactivateState;
-import uniregistrar.state.RegisterState;
+import uniregistrar.state.CreateState;
 import uniregistrar.state.UpdateState;
 
 public class DidBtcrDriver extends AbstractDriver implements Driver {
 
 	private static final Logger log = LogManager.getLogger(DidBtcrDriver.class);
 	// Keep registration states across components
-	private final ConcurrentHashMap<String, RegisterState> registerStates;
+	private final ConcurrentHashMap<String, CreateState> createStates;
 	// Keep update states across components
 	private final ConcurrentHashMap<String, UpdateState> updateStates;
 	// Keep deactivation states across components
@@ -74,7 +74,7 @@ public class DidBtcrDriver extends AbstractDriver implements Driver {
 	private BitcoinJWalletAppKit walletServiceMainnet = null;
 	private BitcoinJWalletAppKit walletServiceTestnet = null;
 	private BitcoinJWalletAppKit walletServiceRegtest = null;
-	private RegisterHandler registerHandler;
+	private CreateHandler createHandler;
 	private UpdateHandler updateHandler;
 	private CompletionHandler completionHandler = null;
 	private DeactivationHandler deactivationHandler;
@@ -119,7 +119,7 @@ public class DidBtcrDriver extends AbstractDriver implements Driver {
 			log.error(e.getMessage());
 			System.exit(1);
 		}
-		registerStates = new ConcurrentHashMap<>();
+		createStates = new ConcurrentHashMap<>();
 		updateStates = new ConcurrentHashMap<>();
 		deactivateStates = new ConcurrentHashMap<>();
 		completionQueue = new LinkedBlockingDeque<>();
@@ -267,7 +267,7 @@ public class DidBtcrDriver extends AbstractDriver implements Driver {
 			fundingServiceRegtest = new InMemoryFundingService(this, Chain.REGTESTNET);
 		}
 
-		registerHandler = new RegisterHandlerBtcr(this);
+		createHandler = new CreateHandlerBtcr(this);
 		updateHandler = new UpdateHandlerBtcr(this);
 		deactivationHandler = new DeactivationHandlerBtcr(this);
 
@@ -470,27 +470,27 @@ public class DidBtcrDriver extends AbstractDriver implements Driver {
 	}
 
 	@Override
-	public RegisterState register(RegisterRequest registerRequest) throws RegistrationException {
+	public CreateState create(CreateRequest createRequest) throws RegistrationException {
 
-		final String jobId = registerRequest.getJobId();
+		final String jobId = createRequest.getJobId();
 		log.debug("Request has job id of {}", () -> jobId == null ? "null" : jobId);
 
 		// Check if job is in progress
 		if (jobId != null && !jobId.isEmpty()) {
-			if (registerStates.containsKey(jobId)) {
+			if (createStates.containsKey(jobId)) {
 				log.debug("Job ID is found");
 				// Check if job is finished
-				final RegisterState retState = registerStates.get(jobId);
-				if (registerStates.get(jobId).getDidState().get("state").equals("finished")) {
+				final CreateState retState = createStates.get(jobId);
+				if (createStates.get(jobId).getDidState().get("state").equals("finished")) {
 					log.debug(
-							"Requested job is already finished. Removing it from the register states, returning its state: {}",
+							"Requested job is already finished. Removing it from the create states, returning its state: {}",
 							() -> retState);
-					registerStates.remove(jobId);
+					createStates.remove(jobId);
 					return retState;
-				} else if (registerStates.get(jobId).getDidState().get("state").equals("failed")) {
-					log.debug("Requested job is failed. Removing it from the register states, returning its state: {}",
+				} else if (createStates.get(jobId).getDidState().get("state").equals("failed")) {
+					log.debug("Requested job is failed. Removing it from the create states, returning its state: {}",
 							() -> retState);
-					registerStates.remove(jobId);
+					createStates.remove(jobId);
 					return retState;
 				}
 				// This method double checks the confirmation state and will be removed after
@@ -511,11 +511,11 @@ public class DidBtcrDriver extends AbstractDriver implements Driver {
 						completeJob.get(1, TimeUnit.SECONDS);
 					} catch (InterruptedException | TimeoutException | ExecutionException e) {
 						log.error(e.getMessage());
-						return registerStates.get(jobId);
+						return createStates.get(jobId);
 					}
-					if (registerStates.get(jobId).getDidState().get("state").equals("finished")) {
+					if (createStates.get(jobId).getDidState().get("state").equals("finished")) {
 						log.debug("Job {} is completed with on-demand confirmation check triggering.", () -> jobId);
-						return registerStates.remove(jobId);
+						return createStates.remove(jobId);
 					}
 				} else {
 					log.debug("Requested job is still in progress. Returning its current state: {}", () -> retState);
@@ -527,18 +527,18 @@ public class DidBtcrDriver extends AbstractDriver implements Driver {
 		}
 
 		try {
-			RegisterRequestValidator.validate(registerRequest, configs);
+			CreateRequestValidator.validate(createRequest, configs);
 		} catch (ValidationException e) {
 			log.error(e.getMessage(), e);
 			throw new RegistrationException(e.getMessage(), e);
 		}
 
-		log.debug("New registration request is received: {}", () -> registerRequest);
+		log.debug("New registration request is received: {}", () -> createRequest);
 
-		final Map<String, Object> options = registerRequest.getOptions();
+		final Map<String, Object> options = createRequest.getOptions();
 
 		final Chain chain = options == null || !options.containsKey("chain") ? Chain.TESTNET
-				: Chain.fromString((String) registerRequest.getOptions().get("chain"));
+				: Chain.fromString((String) createRequest.getOptions().get("chain"));
 
 		log.debug("Request  will be processed on chain {}", chain);
 
@@ -556,7 +556,7 @@ public class DidBtcrDriver extends AbstractDriver implements Driver {
 
 		if (options != null && options.containsKey("fundingRequest")) {
 			final Map<String, String> toRet = getFundingService(chain).askForFunding();
-			RegisterState state = RegisterState.build();
+			CreateState state = CreateState.build();
 			state.setDidState(null);
 			state.setRegistrarMetadata(null);
 			state.setJobId(null);
@@ -565,7 +565,7 @@ public class DidBtcrDriver extends AbstractDriver implements Driver {
 		}
 
 		try {
-			return registerHandler.handle(registerRequest);
+			return createHandler.handle(createRequest);
 		} catch (RegistrationException e) {
 			throw new RegistrationException(e.getMessage());
 		}
@@ -589,7 +589,7 @@ public class DidBtcrDriver extends AbstractDriver implements Driver {
 					updateStates.remove(jobId);
 					return state;
 				} else if (updateStates.get(jobId).getDidState().get("state").equals("failed")) {
-					log.debug("Requested job is failed. Removing it from the register states, returning its state: {}",
+					log.debug("Requested job is failed. Removing it from the create states, returning its state: {}",
 							() -> state);
 					updateStates.remove(jobId);
 					return state;
@@ -680,7 +680,7 @@ public class DidBtcrDriver extends AbstractDriver implements Driver {
 					deactivateStates.remove(jobId);
 					return state;
 				} else if (deactivateStates.get(jobId).getDidState().get("state").equals("failed")) {
-					log.debug("Requested job is failed. Removing it from the register states, returning its state: {}",
+					log.debug("Requested job is failed. Removing it from the create states, returning its state: {}",
 							() -> state);
 					deactivateStates.remove(jobId);
 					return state;
@@ -703,7 +703,7 @@ public class DidBtcrDriver extends AbstractDriver implements Driver {
 						log.error(e.getMessage());
 						return deactivateStates.get(jobId);
 					}
-					if (registerStates.get(jobId).getDidState().get("state").equals("finished")) {
+					if (createStates.get(jobId).getDidState().get("state").equals("finished")) {
 						log.debug("Job {} is completed with the fallback triggering.", () -> jobId);
 						return deactivateStates.remove(jobId);
 					}
@@ -799,17 +799,17 @@ public class DidBtcrDriver extends AbstractDriver implements Driver {
 		String initTime = ParsingUtils.getTimeStamp(failed.getCreationTime());
 		log.info("{} job with id of {} is failed!", () -> jobType, () -> jobId);
 		log.info("Job was created at {}", () -> initTime);
-		if (jobType == JobType.REGISTER) {
-			RegisterState state = registerStates.get(jobId);
-			SetBtcrRegisterStateFailed.setStateFail(state, reason, initTime);
-			registerStates.put(jobId, state);
+		if (jobType == JobType.CREATE) {
+			CreateState state = createStates.get(jobId);
+			SetBtcrCreateStateFailed.setStateFail(state, reason, initTime);
+			createStates.put(jobId, state);
 		} else if (jobType == JobType.UPDATE) {
 			UpdateState state = updateStates.get(jobId);
-			SetBtcrRegisterStateFailed.setStateFail(state, reason, initTime);
+			SetBtcrCreateStateFailed.setStateFail(state, reason, initTime);
 			updateStates.put(jobId, state);
 		} else {
 			DeactivateState state = deactivateStates.get(jobId);
-			SetBtcrRegisterStateFailed.setStateFail(state, reason, initTime);
+			SetBtcrCreateStateFailed.setStateFail(state, reason, initTime);
 			deactivateStates.put(jobId, state);
 		}
 	}
@@ -893,8 +893,8 @@ public class DidBtcrDriver extends AbstractDriver implements Driver {
 		return completionQueue;
 	}
 
-	public Map<String, RegisterState> getRegisterStates() {
-		return registerStates;
+	public Map<String, CreateState> getCreateStates() {
+		return createStates;
 	}
 
 	public Map<String, DeactivateState> getDeactivateStates() {

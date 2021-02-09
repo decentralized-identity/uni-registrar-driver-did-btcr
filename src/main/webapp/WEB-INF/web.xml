@@ -20,9 +20,9 @@
 	</servlet>
 
 	<servlet>
-		<display-name>RegisterServlet</display-name>
-		<servlet-name>RegisterServlet</servlet-name>
-		<servlet-class>uniregistrar.driver.servlet.RegisterServlet</servlet-class>
+		<display-name>CreateServlet</display-name>
+		<servlet-name>CreateServlet</servlet-name>
+		<servlet-class>uniregistrar.driver.servlet.CreateServlet</servlet-class>
 	</servlet>
 	<servlet>
 		<display-name>UpdateServlet</display-name>
@@ -40,8 +40,8 @@
 		<servlet-class>uniregistrar.driver.servlet.PropertiesServlet</servlet-class>
 	</servlet>
 	<servlet-mapping>
-		<servlet-name>RegisterServlet</servlet-name>
-		<url-pattern>/1.0/register</url-pattern>
+		<servlet-name>CreateServlet</servlet-name>
+		<url-pattern>/1.0/create</url-pattern>
 	</servlet-mapping>
 	<servlet-mapping>
 		<servlet-name>UpdateServlet</servlet-name>

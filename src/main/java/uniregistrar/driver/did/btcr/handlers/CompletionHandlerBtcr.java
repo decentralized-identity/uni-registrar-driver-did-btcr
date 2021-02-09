@@ -29,14 +29,14 @@ import uniregistrar.driver.did.btcr.DriverConfigs;
 import uniregistrar.driver.did.btcr.diddoccontinuation.DIDDocContinuation;
 import uniregistrar.driver.did.btcr.enums.JobType;
 import uniregistrar.driver.did.btcr.service.ExecutorProvider;
-import uniregistrar.driver.did.btcr.state.SetBtcrRegisterStateFinished;
+import uniregistrar.driver.did.btcr.state.SetBtcrCreateStateFinished;
 import uniregistrar.driver.did.btcr.util.BTCRUtils;
 import uniregistrar.driver.did.btcr.util.BitcoinUtils;
 import uniregistrar.driver.did.btcr.util.ECKeyUtils;
 import uniregistrar.driver.did.btcr.util.NetworkUtils;
 import uniregistrar.state.DeactivateState;
-import uniregistrar.state.RegisterState;
-import uniregistrar.state.SetRegisterStateFinished;
+import uniregistrar.state.CreateState;
+import uniregistrar.state.SetCreateStateFinished;
 import uniregistrar.state.UpdateState;
 
 /**
@@ -78,7 +78,7 @@ public class CompletionHandlerBtcr implements CompletionHandler {
 				if (job == null) {
 					continue;
 				}
-				if (job.getJobType() == JobType.REGISTER) {
+				if (job.getJobType() == JobType.CREATE) {
 					CompletableFuture.runAsync(() -> {
 						try {
 							completeRegistration(job);
@@ -193,7 +193,7 @@ public class CompletionHandlerBtcr implements CompletionHandler {
 
 		final UpdateState state = UpdateState.build();
 
-		SetBtcrRegisterStateFinished.setStateFinished(state, did, secret);
+		SetBtcrCreateStateFinished.setStateFinished(state, did, secret);
 		state.setMethodMetadata(methodMetadata);
 		state.setJobId(job.getJobId());
 
@@ -206,7 +206,7 @@ public class CompletionHandlerBtcr implements CompletionHandler {
 
 	public void completeRegistration(DidBtcrJob job) throws RegistrationException, IOException {
 		Thread.currentThread().setContextClassLoader(driver.getClass().getClassLoader());
-		log.debug("Received a register-completion job: {}", job::getJobId);
+		log.debug("Received a create-completion job: {}", job::getJobId);
 
 		final Chain chain = job.getChain();
 		final String txHash = job.getTransactionHash();
@@ -282,18 +282,18 @@ public class CompletionHandlerBtcr implements CompletionHandler {
 
 		// Registration is finished. Prepare the result.
 		final Map<String, Object> methodMetadata = new LinkedHashMap<>();
-		methodMetadata.put("registerCompletionTime", BTCRUtils.getTimeStamp());
+		methodMetadata.put("createCompletionTime", BTCRUtils.getTimeStamp());
 		methodMetadata.put("chain", chain);
 		methodMetadata.put("transactionHash", txHash);
 		methodMetadata.put("blockHeight", chainAndLocationData.getLocationData().getBlockHeight());
 		methodMetadata.put("transactionPosition", chainAndLocationData.getLocationData().getTransactionPosition());
 		methodMetadata.put("txoIndex", chainAndLocationData.getLocationData().getTxoIndex());
 		methodMetadata.put("didContinuationUri", "" + didContinuationUri);
-		methodMetadata.put("operation", "register");
+		methodMetadata.put("operation", "create");
 
-		final RegisterState state = RegisterState.build();
+		final CreateState state = CreateState.build();
 
-		SetRegisterStateFinished.setStateFinished(state, did, secret);
+		SetCreateStateFinished.setStateFinished(state, did, secret);
 		state.setMethodMetadata(methodMetadata);
 		state.setJobId(job.getJobId());
 
@@ -305,7 +305,7 @@ public class CompletionHandlerBtcr implements CompletionHandler {
 //			driver.removeUtxoKey(job.getPrivateKey(), chain);
 //		}
 		driver.jobCompleted(job.getJobId());
-		driver.getRegisterStates().put(job.getJobId(), state);
+		driver.getCreateStates().put(job.getJobId(), state);
 
 	}
 
@@ -361,7 +361,7 @@ public class CompletionHandlerBtcr implements CompletionHandler {
 
 		final DeactivateState state = DeactivateState.build();
 
-		SetBtcrRegisterStateFinished.setStateFinished(state, did, secret);
+		SetBtcrCreateStateFinished.setStateFinished(state, did, secret);
 		state.setMethodMetadata(methodMetadata);
 		state.setJobId(job.getJobId());
 

@@ -3,26 +3,26 @@ package uniregistrar.driver.did.btcr.state;
 import java.util.Map;
 
 import uniregistrar.state.DeactivateState;
-import uniregistrar.state.RegisterState;
+import uniregistrar.state.CreateState;
 import uniregistrar.state.UpdateState;
 
 /**
  * Just another messy class since we don't have state interface
  */
-public final class SetBtcrRegisterStateFinished {
-	private SetBtcrRegisterStateFinished() {
+public final class SetBtcrCreateStateFinished {
+	private SetBtcrCreateStateFinished() {
 
 	}
 
-	public static String getStateFinishedIdentifier(RegisterState registerState) {
-		if (!isStateFinished(registerState))
+	public static String getStateFinishedIdentifier(CreateState createState) {
+		if (!isStateFinished(createState))
 			return null;
-		return (String) registerState.getDidState().get("identifier");
+		return (String) createState.getDidState().get("identifier");
 	}
 
-	public static boolean isStateFinished(RegisterState registerState) {
+	public static boolean isStateFinished(CreateState createState) {
 
-		return "finished".equals(SetBtcrRegisterState.getState(registerState));
+		return "finished".equals(SetBtcrCreateState.getState(createState));
 	}
 
 	public static String getStateFinishedIdentifier(UpdateState updateState) {
@@ -33,7 +33,7 @@ public final class SetBtcrRegisterStateFinished {
 
 	public static boolean isStateFinished(UpdateState updateState) {
 
-		return "finished".equals(SetBtcrRegisterState.getState(updateState));
+		return "finished".equals(SetBtcrCreateState.getState(updateState));
 	}
 
 	public static String getStateFinishedIdentifier(DeactivateState deactivateState) {
@@ -44,15 +44,15 @@ public final class SetBtcrRegisterStateFinished {
 
 	public static boolean isStateFinished(DeactivateState deactivateState) {
 
-		return "finished".equals(SetBtcrRegisterState.getState(deactivateState));
+		return "finished".equals(SetBtcrCreateState.getState(deactivateState));
 	}
 
 	@SuppressWarnings("unchecked")
-	public static Map<String, Object> getStateFinishedSecret(RegisterState registerState) {
+	public static Map<String, Object> getStateFinishedSecret(CreateState createState) {
 
-		if (!isStateFinished(registerState))
+		if (!isStateFinished(createState))
 			return null;
-		return (Map<String, Object>) registerState.getDidState().get("secret");
+		return (Map<String, Object>) createState.getDidState().get("secret");
 	}
 
 	@SuppressWarnings("unchecked")
@@ -71,16 +71,16 @@ public final class SetBtcrRegisterStateFinished {
 		return (Map<String, Object>) deactivateState.getDidState().get("secret");
 	}
 
-	public static void setStateFinished(RegisterState registerState, String identifier, Map<String, Object> secret) {
+	public static void setStateFinished(CreateState createState, String identifier, Map<String, Object> secret) {
 
-		SetBtcrRegisterState.setState(registerState, "finished");
-		registerState.getDidState().put("identifier", identifier);
-		registerState.getDidState().put("secret", secret);
+		SetBtcrCreateState.setState(createState, "finished");
+		createState.getDidState().put("identifier", identifier);
+		createState.getDidState().put("secret", secret);
 	}
 
 	public static void setStateFinished(UpdateState updateState, String identifier, Map<String, Object> secret) {
 
-		SetBtcrRegisterState.setState(updateState, "finished");
+		SetBtcrCreateState.setState(updateState, "finished");
 		updateState.getDidState().put("identifier", identifier);
 		updateState.getDidState().put("secret", secret);
 	}
@@ -88,7 +88,7 @@ public final class SetBtcrRegisterStateFinished {
 	public static void setStateFinished(DeactivateState deactivateState, String identifier,
 			Map<String, Object> secret) {
 
-		SetBtcrRegisterState.setState(deactivateState, "finished");
+		SetBtcrCreateState.setState(deactivateState, "finished");
 		deactivateState.getDidState().put("identifier", identifier);
 		deactivateState.getDidState().put("secret", secret);
 	}

@@ -26,8 +26,8 @@ import uniregistrar.driver.did.btcr.DriverConfigs;
 import uniregistrar.driver.did.btcr.enums.JobType;
 import uniregistrar.driver.did.btcr.funding.BtcrFund;
 import uniregistrar.driver.did.btcr.funding.FundingException;
-import uniregistrar.driver.did.btcr.state.SetBtcrRegisterStateFinished;
-import uniregistrar.driver.did.btcr.state.SetRegisterStateWaitConfirm;
+import uniregistrar.driver.did.btcr.state.SetBtcrCreateStateFinished;
+import uniregistrar.driver.did.btcr.state.SetCreateStateWaitConfirm;
 import uniregistrar.driver.did.btcr.util.*;
 import uniregistrar.request.DeactivateRequest;
 import uniregistrar.state.DeactivateState;
@@ -188,12 +188,12 @@ public class DeactivationHandlerBtcr implements DeactivationHandler {
 		deactivateState.setJobId(cJobId);
 
 		if (configs.isFollowDeactivate() || rotateKey) {
-			SetRegisterStateWaitConfirm.setStateWaitConfirm(deactivateState, String.valueOf(
+			SetCreateStateWaitConfirm.setStateWaitConfirm(deactivateState, String.valueOf(
 					BTCRUtils.estimateWaitingTime(configs, driver.getWalletService(chain).getBlockTimeSeconds())));
 			driver.getBitcoinConfirmationTracker(chain).followTransaction(cJobId, sent.getTxId().toString());
 			driver.addNewJob(job);
 		} else {
-			SetBtcrRegisterStateFinished.setStateFinished(deactivateState, identifier, null);
+			SetBtcrCreateStateFinished.setStateFinished(deactivateState, identifier, null);
 		}
 
 		driver.getDeactivateStates().put(job.getJobId(), deactivateState);
