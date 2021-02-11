@@ -65,7 +65,7 @@ ENV uniregistrar_driver_did_btcr_overWriteDidDocs=true
 ENV uniregistrar_driver_did_btcr_rpcCertMainnet=
 ENV uniregistrar_driver_did_btcr_rpcCertTestnet=
 
-# done
+# done
 
 EXPOSE 9080
 
