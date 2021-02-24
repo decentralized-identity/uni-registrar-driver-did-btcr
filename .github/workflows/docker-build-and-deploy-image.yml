@@ -27,8 +27,8 @@ jobs:
           token: ${{ secrets.CI_SECRET_READER_PERIODIC_TOKEN }}
           tlsSkipVerify: true
           secrets: |
-            ci/data/gh-workflows/docker-danubetech-nexus username | DOCKER_USERNAME ;
-            ci/data/gh-workflows/docker-danubetech-nexus password | DOCKER_PASSWORD ;
+            ci/data/gh-workflows/dockerhub username | DOCKER_USERNAME ;
+            ci/data/gh-workflows/dockerhub password | DOCKER_PASSWORD ;
             ci/data/gh-workflows/deployment-status slack-webhook-url | SLACK_WEBHOOK_URL
       - name: Run build image action
         run: docker build -f "${{ env.BUILD_CONTEXT }}${{ env.PATH_TO_DOCKERFILE }}" -t "${{ env.IMAGE_NAME }}" "${{ env.BUILD_CONTEXT }}"
