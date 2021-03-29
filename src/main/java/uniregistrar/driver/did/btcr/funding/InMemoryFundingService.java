@@ -209,6 +209,6 @@ public class InMemoryFundingService implements FundingService {
 		log.debug("New expected fund is added with ticket {}, and fund address {}", () -> ticket, fund::getFundAddress);
 		log.debug("Expected funds size: {}", expectedFunds::size);
 
-		return "Please fund the address " + address.toString() + " and ask for operation with the ticket " + ticket;
+		return "Please fund the address " + address.toString() + " and re-submit the operation with the property \"fundingTicket\" set to value \"" + ticket + "\" in the \"secret\" request object.";
 	}
 }
