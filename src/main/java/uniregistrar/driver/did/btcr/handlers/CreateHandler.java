@@ -1,6 +1,7 @@
 package uniregistrar.driver.did.btcr.handlers;
 
 import uniregistrar.RegistrationException;
+import uniregistrar.driver.did.btcr.funding.BtcrFund;
 import uniregistrar.request.CreateRequest;
 import uniregistrar.state.CreateState;
 
@@ -15,5 +16,5 @@ public interface CreateHandler {
 	 * @return {@link CreateState} of the operation
 	 * @throws RegistrationException RegistrationException
 	 */
-	CreateState handle(CreateRequest request) throws RegistrationException;
+	CreateState handle(CreateRequest request, BtcrFund fund) throws RegistrationException;
 }

@@ -85,14 +85,6 @@ public class BtcrFund {
 		this.fundingType = fundingType;
 	}
 
-	public String getUUID() {
-		return uuid;
-	}
-
-	public void setUUID(String uuid) {
-		this.uuid = uuid;
-	}
-
 	public String getTxID() {
 		return txID;
 	}

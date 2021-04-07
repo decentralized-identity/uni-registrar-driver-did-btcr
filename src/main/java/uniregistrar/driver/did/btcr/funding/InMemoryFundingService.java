@@ -1,14 +1,8 @@
 package uniregistrar.driver.did.btcr.funding;
 
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
-
-import javax.annotation.Nullable;
-
+import com.google.common.base.Preconditions;
+import info.weboftrust.btctxlookup.Chain;
+import info.weboftrust.btctxlookup.bitcoinconnection.BitcoinConnectionException;
 import org.apache.commons.collections4.map.PassiveExpiringMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -16,17 +10,20 @@ import org.bitcoinj.core.*;
 import org.bitcoinj.script.Script;
 import org.bitcoinj.script.ScriptPattern;
 import org.bitcoinj.wallet.Wallet;
-
-import com.google.common.base.Preconditions;
-
-import info.weboftrust.btctxlookup.Chain;
-import info.weboftrust.btctxlookup.bitcoinconnection.BitcoinConnectionException;
 import uniregistrar.driver.did.btcr.DidBtcrDriver;
 import uniregistrar.driver.did.btcr.DriverConfigs;
 import uniregistrar.driver.did.btcr.DriverConstants;
 import uniregistrar.driver.did.btcr.enums.FundingType;
 import uniregistrar.driver.did.btcr.util.BitcoinUtils;
 import uniregistrar.driver.did.btcr.util.ECKeyUtils;
+
+import javax.annotation.Nullable;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Manages the transaction funding
@@ -42,14 +39,11 @@ public class InMemoryFundingService implements FundingService {
 	private final NetworkParameters params;
 
 	/**
-	 *
 	 * Expected {@link BtcrFund} entities are kept in {@link PassiveExpiringMap}
 	 * Server side {@link BtcrFund} obtained from UTXO-Wallets
-	 * 
-	 * @implNote This implementation has no persistence
-	 * 
 	 * @param driver {@link DidBtcrDriver}
 	 * @param chain  {@link Chain}
+	 * @implNote This implementation has no persistence
 	 */
 	public InMemoryFundingService(DidBtcrDriver driver, Chain chain) {
 		this.driver = driver;
@@ -57,7 +51,7 @@ public class InMemoryFundingService implements FundingService {
 		this.chain = chain;
 		this.params = BitcoinUtils.chainToNetworkParameters(chain);
 		this.expectedFunds = new PassiveExpiringMap<>(DriverConstants.DEFAULT_FUNDING_WAIT_TIME, TimeUnit.HOURS,
-				new ConcurrentHashMap<>());
+													  new ConcurrentHashMap<>());
 	}
 
 	@Override
@@ -96,14 +90,15 @@ public class InMemoryFundingService implements FundingService {
 
 //		toSpend = utxoToUse.get();
 		ECKey fundingKey = wallet.findKeyFromPubKeyHash(toSpend.getScriptPubKey().getPubKeyHash(),
-				ScriptPattern.isP2PKH(toSpend.getScriptPubKey()) ? Script.ScriptType.P2PKH : Script.ScriptType.P2WPKH);
+														ScriptPattern.isP2PKH(toSpend.getScriptPubKey()) ? Script.ScriptType.P2PKH
+																										 : Script.ScriptType.P2WPKH);
 		log.debug("Suitable UTXO is found {}", toSpend::toString);
 
 		TransactionOutPoint outPoint = new TransactionOutPoint(params, toSpend);
 
 		return BtcrFund.Builder.newFund().withAmount(toSpend.getValue()).withFundingKey(fundingKey)
-				.withTxOutPoint(outPoint).withTransactionOutput(toSpend).withOutIndex(toSpend.getIndex())
-				.withFundingType(FundingType.SERVER).withChangeKey(new ECKey()).build();
+							   .withTxOutPoint(outPoint).withTransactionOutput(toSpend).withOutIndex(toSpend.getIndex())
+							   .withFundingType(FundingType.SERVER).withChangeKey(new ECKey()).build();
 	}
 
 	@Override
@@ -127,8 +122,8 @@ public class InMemoryFundingService implements FundingService {
 		ECKey changeKey = rotateKey ? ECKeyUtils.getFreshKey() : privKey;
 
 		BtcrFund toRet = BtcrFund.Builder.newFund().withFundingKey(privKey).withFundingType(FundingType.USER)
-				.withTxID(txid).withTransactionOutput(output).withAmount(value).withOutIndex(oin)
-				.withChangeKey(changeKey).build();
+										 .withTxID(txid).withTransactionOutput(output).withAmount(value).withOutIndex(oin)
+										 .withChangeKey(changeKey).build();
 		log.debug("Created client fund: {}", () -> toRet);
 
 		return toRet;
@@ -139,7 +134,8 @@ public class InMemoryFundingService implements FundingService {
 		if (expectedFund == null) {
 			log.debug("Failed to find/load the fund for given funding ticket: {} ", fundingTicket);
 			throw new FundingException("No such a fund is found!");
-		} else {
+		}
+		else {
 			log.debug("Fund found. Removing it from the expected-funds!");
 			expectedFunds.remove(fundingTicket);
 		}
@@ -175,7 +171,7 @@ public class InMemoryFundingService implements FundingService {
 	public boolean canServerFund() {
 		Context.propagate(driver.getContext(chain));
 		Wallet wallet = driver.getUtxoWallet(chain);
-		if(wallet == null){
+		if (wallet == null) {
 			return false;
 		}
 		return wallet.calculateAllSpendCandidates(true, true).size() > 0;
@@ -189,7 +185,7 @@ public class InMemoryFundingService implements FundingService {
 		Address address = Address.fromKey(params, expectedFundKey, driverConfigs.getPrefScriptType());
 		funding.put("address", address.toString());
 		BtcrFund fund = BtcrFund.Builder.newFund().withFundingType(FundingType.USER).withFundingKey(expectedFundKey)
-				.withUuid(ticket).withFundingAddress(address).build();
+										.withUuid(ticket).withFundingAddress(address).build();
 
 		expectedFunds.put(ticket, fund);
 		log.debug("New expected fund is added with ticket {}, and fund address {}", () -> ticket, fund::getFundAddress);
@@ -199,16 +195,42 @@ public class InMemoryFundingService implements FundingService {
 	}
 
 	public String askForFundingString() {
-		String ticket = UUID.randomUUID().toString();
+		return askForFundingString(UUID.randomUUID().toString());
+	}
+
+	public String askForFundingString(String ticket) {
 		ECKey expectedFundKey = ECKeyUtils.getFreshKey();
 		Address address = Address.fromKey(params, expectedFundKey, driverConfigs.getPrefScriptType());
 		BtcrFund fund = BtcrFund.Builder.newFund().withFundingType(FundingType.USER).withFundingKey(expectedFundKey)
-				.withUuid(ticket).withFundingAddress(address).build();
+										.withUuid(ticket).withFundingAddress(address).build();
 
 		expectedFunds.put(ticket, fund);
 		log.debug("New expected fund is added with ticket {}, and fund address {}", () -> ticket, fund::getFundAddress);
 		log.debug("Expected funds size: {}", expectedFunds::size);
 
 		return "Please fund the address " + address.toString() + " and re-submit the operation with the property \"fundingTicket\" set to value \"" + ticket + "\" in the \"secret\" request object.";
+	}
+
+	public BtcrFund prepareFund() {
+		String ticket = UUID.randomUUID().toString();
+		ECKey expectedFundKey = ECKeyUtils.getFreshKey();
+		Address address = Address.fromKey(params, expectedFundKey, driverConfigs.getPrefScriptType());
+		BtcrFund fund = BtcrFund.Builder.newFund().withFundingType(FundingType.USER).withFundingKey(expectedFundKey)
+										.withUuid(ticket).withFundingAddress(address).build();
+
+		expectedFunds.put(ticket, fund);
+		log.debug("New expected fund is added with ticket {}, and fund address {}", () -> ticket, fund::getFundAddress);
+		log.debug("Expected funds size: {}", expectedFunds::size);
+
+		return fund;
+	}
+
+	public String askForFundingString(BtcrFund fund) {
+
+		log.debug("New expected fund is added with jobId {}, and fund address {}", fund::getUuid, fund::getFundAddress);
+		log.debug("Expected funds size: {}", expectedFunds::size);
+
+		return "Please fund the address " + fund.getFundAddress()
+												.toString() + " and check the operation with jobId set to " + fund.getUuid();
 	}
 }
