@@ -1,14 +1,14 @@
 package uniregistrar.driver.did.btcr;
 
-import java.io.File;
-import java.io.IOException;
-import java.net.MalformedURLException;
-import java.util.Collections;
-import java.util.Map;
-import java.util.Properties;
-import java.util.concurrent.*;
-
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.google.common.base.Preconditions;
+import info.weboftrust.btctxlookup.Chain;
+import info.weboftrust.btctxlookup.bitcoinconnection.BitcoindRPCBitcoinConnection;
 import org.apache.commons.collections4.MapUtils;
+import org.apache.commons.collections4.map.PassiveExpiringMap;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -19,19 +19,12 @@ import org.bitcoinj.params.MainNetParams;
 import org.bitcoinj.params.RegTestParams;
 import org.bitcoinj.params.TestNet3Params;
 import org.bitcoinj.wallet.Wallet;
-
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.google.common.base.Preconditions;
-
-import info.weboftrust.btctxlookup.Chain;
-import info.weboftrust.btctxlookup.bitcoinconnection.BitcoindRPCBitcoinConnection;
 import uniregistrar.RegistrationException;
 import uniregistrar.driver.AbstractDriver;
 import uniregistrar.driver.Driver;
 import uniregistrar.driver.did.btcr.enums.JobType;
+import uniregistrar.driver.did.btcr.funding.BtcrFund;
+import uniregistrar.driver.did.btcr.funding.FundingException;
 import uniregistrar.driver.did.btcr.funding.FundingService;
 import uniregistrar.driver.did.btcr.funding.InMemoryFundingService;
 import uniregistrar.driver.did.btcr.handlers.*;
@@ -45,12 +38,21 @@ import uniregistrar.driver.did.btcr.util.ErrorMessages;
 import uniregistrar.driver.did.btcr.util.NetworkUtils;
 import uniregistrar.driver.did.btcr.util.ParsingUtils;
 import uniregistrar.driver.did.btcr.util.validators.*;
-import uniregistrar.request.DeactivateRequest;
 import uniregistrar.request.CreateRequest;
+import uniregistrar.request.DeactivateRequest;
 import uniregistrar.request.UpdateRequest;
-import uniregistrar.state.DeactivateState;
 import uniregistrar.state.CreateState;
+import uniregistrar.state.DeactivateState;
 import uniregistrar.state.UpdateState;
+
+import java.io.File;
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.util.Collections;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Properties;
+import java.util.concurrent.*;
 
 public class DidBtcrDriver extends AbstractDriver implements Driver {
 
@@ -65,6 +67,8 @@ public class DidBtcrDriver extends AbstractDriver implements Driver {
 	private final BlockingQueue<DidBtcrJob> completionQueue;
 	// Created but not yet completed jobs
 	private final Map<String, DidBtcrJob> unconfirmedJobs;
+	// Jobs with funding requirement
+	private final Map<String, DidBtcrJob> fundingRequiredJobs;
 	// Initial configurations used for this driver
 	private DriverConfigs configs = null;
 	private BitcoindRPCBitcoinConnection rpcClientTestNet;
@@ -112,7 +116,7 @@ public class DidBtcrDriver extends AbstractDriver implements Driver {
 		Thread.currentThread().setName("DidBtcrDriver-MainThread");
 		Preconditions.checkNotNull(props, "Driver properties cannot be null!");
 		log.debug("Creating new uniregistrar.driver.did.btcr.DidBtcrDriver with given properties {}",
-				() -> StringUtils.join(props));
+				  () -> StringUtils.join(props));
 		try {
 			configs = Configurator.getDriverProps(props);
 		} catch (ConfigurationException e) {
@@ -124,6 +128,8 @@ public class DidBtcrDriver extends AbstractDriver implements Driver {
 		deactivateStates = new ConcurrentHashMap<>();
 		completionQueue = new LinkedBlockingDeque<>();
 		unconfirmedJobs = new ConcurrentHashMap<>();
+		fundingRequiredJobs = new PassiveExpiringMap<>(DriverConstants.DEFAULT_FUNDING_WAIT_TIME, TimeUnit.HOURS,
+													   new ConcurrentHashMap<>());
 
 		try {
 			initDriver();
@@ -218,7 +224,7 @@ public class DidBtcrDriver extends AbstractDriver implements Driver {
 			}
 
 			confirmationTrackerMainnet = new BitcoinConfirmationTracker(this, Chain.MAINNET, configs.getRequiredDepth(),
-					rpcClientMainNet);
+																		rpcClientMainNet);
 			if (configs.getMainnetCheckInterval() > 0) {
 				confirmationTrackerMainnet.start(configs.getMainnetCheckInterval());
 			}
@@ -239,7 +245,7 @@ public class DidBtcrDriver extends AbstractDriver implements Driver {
 			}
 
 			confirmationTrackerTestnet = new BitcoinConfirmationTracker(this, Chain.TESTNET, configs.getRequiredDepth(),
-					rpcClientTestNet);
+																		rpcClientTestNet);
 			if (configs.getTestnetCheckInterval() > 0) {
 				confirmationTrackerTestnet.start(configs.getTestnetCheckInterval());
 			}
@@ -260,7 +266,7 @@ public class DidBtcrDriver extends AbstractDriver implements Driver {
 			}
 
 			confirmationTrackerRegtest = new BitcoinConfirmationTracker(this, Chain.REGTESTNET,
-					configs.getRequiredDepth(), rpcClientRegtest);
+																		configs.getRequiredDepth(), rpcClientRegtest);
 			if (configs.getRegtestCheckInterval() > 0) {
 				confirmationTrackerRegtest.start(configs.getRegtestCheckInterval());
 			}
@@ -285,7 +291,7 @@ public class DidBtcrDriver extends AbstractDriver implements Driver {
 				throw new ConfigurationException(e);
 			}
 			utxoProducerMainnet = new UTXOProducer(this, Chain.MAINNET, walletServiceMainnet.getWallet(),
-					configs.getUtxoUpkeepTarget(Chain.MAINNET), Coin.valueOf(configs.getTargetFundAmount()));
+												   configs.getUtxoUpkeepTarget(Chain.MAINNET), Coin.valueOf(configs.getTargetFundAmount()));
 			utxoProducerMainnet.start();
 		}
 
@@ -298,7 +304,7 @@ public class DidBtcrDriver extends AbstractDriver implements Driver {
 				throw new ConfigurationException(e);
 			}
 			utxoProducerTestnet = new UTXOProducer(this, Chain.TESTNET, walletServiceTestnet.getWallet(),
-					configs.getUtxoUpkeepTarget(Chain.TESTNET), Coin.valueOf(configs.getTargetFundAmount()));
+												   configs.getUtxoUpkeepTarget(Chain.TESTNET), Coin.valueOf(configs.getTargetFundAmount()));
 			utxoProducerTestnet.start();
 		}
 
@@ -311,7 +317,7 @@ public class DidBtcrDriver extends AbstractDriver implements Driver {
 				throw new ConfigurationException(e);
 			}
 			utxoProducerRegtest = new UTXOProducer(this, Chain.REGTESTNET, walletServiceRegtest.getWallet(),
-					configs.getUtxoUpkeepTarget(Chain.REGTESTNET), Coin.valueOf(configs.getTargetFundAmount()));
+												   configs.getUtxoUpkeepTarget(Chain.REGTESTNET), Coin.valueOf(configs.getTargetFundAmount()));
 			utxoProducerRegtest.start();
 		}
 
@@ -399,29 +405,29 @@ public class DidBtcrDriver extends AbstractDriver implements Driver {
 		Preconditions.checkNotNull(chain, "Chain cannot be null!");
 		log.info("Opening wallet for the chain {} ...", chain);
 		switch (chain) {
-		case MAINNET: {
-			walletServiceMainnet = new BitcoinJWalletAppKit(this, chain, configs.getWalletPath(chain),
-					configs.getWalletPrefix(chain), configs.getWalletKey(chain));
-			walletServiceMainnet.setPeers(configs.getMainnetPeers());
-			walletServiceMainnet.start();
-			break;
-		}
-		case TESTNET: {
-			walletServiceTestnet = new BitcoinJWalletAppKit(this, chain, configs.getWalletPath(chain),
-					configs.getWalletPrefix(chain), configs.getWalletKey(chain));
-			walletServiceTestnet.setPeers(configs.getTestnetPeers());
-			walletServiceTestnet.start();
-			break;
-		}
-		case REGTESTNET: {
-			walletServiceRegtest = new BitcoinJWalletAppKit(this, chain, configs.getWalletPath(chain),
-					configs.getWalletPrefix(chain), configs.getWalletKey(chain));
-			walletServiceRegtest.setPeers(configs.getRegtestPeers());
-			walletServiceRegtest.start();
-			break;
-		}
-		default:
-			throw new IllegalArgumentException("No such a chain!");
+			case MAINNET: {
+				walletServiceMainnet = new BitcoinJWalletAppKit(this, chain, configs.getWalletPath(chain),
+																configs.getWalletPrefix(chain), configs.getWalletKey(chain));
+				walletServiceMainnet.setPeers(configs.getMainnetPeers());
+				walletServiceMainnet.start();
+				break;
+			}
+			case TESTNET: {
+				walletServiceTestnet = new BitcoinJWalletAppKit(this, chain, configs.getWalletPath(chain),
+																configs.getWalletPrefix(chain), configs.getWalletKey(chain));
+				walletServiceTestnet.setPeers(configs.getTestnetPeers());
+				walletServiceTestnet.start();
+				break;
+			}
+			case REGTESTNET: {
+				walletServiceRegtest = new BitcoinJWalletAppKit(this, chain, configs.getWalletPath(chain),
+																configs.getWalletPrefix(chain), configs.getWalletKey(chain));
+				walletServiceRegtest.setPeers(configs.getRegtestPeers());
+				walletServiceRegtest.start();
+				break;
+			}
+			default:
+				throw new IllegalArgumentException("No such a chain!");
 		}
 	}
 
@@ -432,25 +438,26 @@ public class DidBtcrDriver extends AbstractDriver implements Driver {
 	public void removeUtxoKey(ECKey key, Chain chain) {
 		boolean removed;
 		switch (chain) {
-		case MAINNET:
-			Context.propagate(contextMainnet);
-			removed = utxoWalletMainnet.removeKey(key);
-			break;
-		case TESTNET:
-			Context.propagate(contextTestnet);
-			removed = utxoWalletTestnet.removeKey(key);
-			break;
-		case REGTESTNET:
-			Context.propagate(contextRegtest);
-			removed = utxoWalletRegtestnet.removeKey(key);
-			break;
-		default:
-			throw new IllegalArgumentException(ErrorMessages.UNKNOWN_CHAIN);
+			case MAINNET:
+				Context.propagate(contextMainnet);
+				removed = utxoWalletMainnet.removeKey(key);
+				break;
+			case TESTNET:
+				Context.propagate(contextTestnet);
+				removed = utxoWalletTestnet.removeKey(key);
+				break;
+			case REGTESTNET:
+				Context.propagate(contextRegtest);
+				removed = utxoWalletRegtestnet.removeKey(key);
+				break;
+			default:
+				throw new IllegalArgumentException(ErrorMessages.UNKNOWN_CHAIN);
 		}
 
 		if (removed) {
 			log.debug("Key with public-key hex {} is removed from the Wallet", key::getPublicKeyAsHex);
-		} else {
+		}
+		else {
 			log.error("Failed to remove the key with public-key hex {} from the Wallet", key::getPublicKeyAsHex);
 		}
 	}
@@ -458,15 +465,19 @@ public class DidBtcrDriver extends AbstractDriver implements Driver {
 	public Wallet getUtxoWallet(Chain chain) {
 		Preconditions.checkNotNull(chain);
 		switch (chain) {
-		case MAINNET:
-			return utxoWalletMainnet;
-		case TESTNET:
-			return utxoWalletTestnet;
-		case REGTESTNET:
-			return utxoWalletRegtestnet;
-		default:
-			throw new IllegalArgumentException("No such chain!");
+			case MAINNET:
+				return utxoWalletMainnet;
+			case TESTNET:
+				return utxoWalletTestnet;
+			case REGTESTNET:
+				return utxoWalletRegtestnet;
+			default:
+				throw new IllegalArgumentException("No such chain!");
 		}
+	}
+
+	public Optional<DidBtcrJob> getAndRemoveFundingRequiredJob(String jobId) {
+		return Optional.ofNullable(fundingRequiredJobs.remove(jobId));
 	}
 
 	@Override
@@ -474,6 +485,11 @@ public class DidBtcrDriver extends AbstractDriver implements Driver {
 
 		final String jobId = createRequest.getJobId();
 		log.debug("Request has job id of {}", () -> jobId == null ? "null" : jobId);
+
+		final Map<String, Object> options = createRequest.getOptions();
+
+		final Chain chain = options == null || !options.containsKey("chain") ? Chain.TESTNET
+																			 : Chain.fromString((String) createRequest.getOptions().get("chain"));
 
 		// Check if job is in progress
 		if (jobId != null && !jobId.isEmpty()) {
@@ -487,9 +503,10 @@ public class DidBtcrDriver extends AbstractDriver implements Driver {
 							() -> retState);
 					createStates.remove(jobId);
 					return retState;
-				} else if (createStates.get(jobId).getDidState().get("state").equals("failed")) {
+				}
+				else if (createStates.get(jobId).getDidState().get("state").equals("failed")) {
 					log.debug("Requested job is failed. Removing it from the create states, returning its state: {}",
-							() -> retState);
+							  () -> retState);
 					createStates.remove(jobId);
 					return retState;
 				}
@@ -497,7 +514,7 @@ public class DidBtcrDriver extends AbstractDriver implements Driver {
 				// stabilizing the confidence tracking
 				else if (getBitcoinConfirmationTracker(
 						Chain.fromString((String) retState.getMethodMetadata().get("chain")))
-								.checkConfirmationsWithJobID(jobId)) {
+						.checkConfirmationsWithJobID(jobId)) {
 					DidBtcrJob job = unconfirmedJobs.get(jobId);
 					CompletableFuture<Void> completeJob = CompletableFuture.runAsync(() -> {
 						try {
@@ -517,11 +534,26 @@ public class DidBtcrDriver extends AbstractDriver implements Driver {
 						log.debug("Job {} is completed with on-demand confirmation check triggering.", () -> jobId);
 						return createStates.remove(jobId);
 					}
-				} else {
+				}
+				else {
 					log.debug("Requested job is still in progress. Returning its current state: {}", () -> retState);
 					return retState;
 				}
-			} else {
+			}
+			else if (fundingRequiredJobs.containsKey(jobId)) {
+				log.debug("{} is in expected funds", () -> jobId);
+				FundingService fundingService = getFundingService(chain);
+				DidBtcrJob job = fundingRequiredJobs.get(jobId);
+				try {
+					CreateRequestValidator.validate(createRequest, configs);
+					BtcrFund fund = fundingService.getExpectedFund(jobId, job.isRotateKey());
+					return createHandler.handle(createRequest, fund);
+				} catch (FundingException | ValidationException e) {
+					throw new RegistrationException(e.getMessage());
+				}
+
+			}
+			else {
 				throw new RegistrationException("Invalid JobID"); // Note: This will be same for the old jobIDs too
 			}
 		}
@@ -534,11 +566,6 @@ public class DidBtcrDriver extends AbstractDriver implements Driver {
 		}
 
 		log.debug("New registration request is received: {}", () -> createRequest);
-
-		final Map<String, Object> options = createRequest.getOptions();
-
-		final Chain chain = options == null || !options.containsKey("chain") ? Chain.TESTNET
-				: Chain.fromString((String) createRequest.getOptions().get("chain"));
 
 		log.debug("Request  will be processed on chain {}", chain);
 
@@ -565,7 +592,7 @@ public class DidBtcrDriver extends AbstractDriver implements Driver {
 		}
 
 		try {
-			return createHandler.handle(createRequest);
+			return createHandler.handle(createRequest, null);
 		} catch (RegistrationException e) {
 			throw new RegistrationException(e.getMessage());
 		}
@@ -588,14 +615,16 @@ public class DidBtcrDriver extends AbstractDriver implements Driver {
 							() -> state);
 					updateStates.remove(jobId);
 					return state;
-				} else if (updateStates.get(jobId).getDidState().get("state").equals("failed")) {
+				}
+				else if (updateStates.get(jobId).getDidState().get("state").equals("failed")) {
 					log.debug("Requested job is failed. Removing it from the create states, returning its state: {}",
-							() -> state);
+							  () -> state);
 					updateStates.remove(jobId);
 					return state;
-				} else if (getBitcoinConfirmationTracker(
+				}
+				else if (getBitcoinConfirmationTracker(
 						Chain.fromString((String) state.getMethodMetadata().get("chain")))
-								.checkConfirmationsWithJobID(jobId)) {
+						.checkConfirmationsWithJobID(jobId)) {
 					DidBtcrJob job = unconfirmedJobs.get(jobId);
 					CompletableFuture<Void> completeJob = CompletableFuture.runAsync(() -> {
 						try {
@@ -617,12 +646,14 @@ public class DidBtcrDriver extends AbstractDriver implements Driver {
 						log.debug("Job {} is completed with the fallback triggering.", () -> jobId);
 						return updateStates.remove(jobId);
 					}
-				} else {
+				}
+				else {
 					log.debug("Requested Update operation is still in progress. Returning its current state: {}",
-							() -> state);
+							  () -> state);
 					return state;
 				}
-			} else {
+			}
+			else {
 				throw new RegistrationException("Invalid JobID"); // Note: This will be same for the old jobIDs too
 			}
 		}
@@ -635,7 +666,7 @@ public class DidBtcrDriver extends AbstractDriver implements Driver {
 		}
 
 		final Chain chain = updateRequest.getOptions() == null ? Chain.TESTNET
-				: Chain.fromString((String) updateRequest.getOptions().get("chain"));
+															   : Chain.fromString((String) updateRequest.getOptions().get("chain"));
 
 		log.debug("UpdateRequest  will be processed on chain {}", chain);
 
@@ -679,14 +710,16 @@ public class DidBtcrDriver extends AbstractDriver implements Driver {
 							() -> state);
 					deactivateStates.remove(jobId);
 					return state;
-				} else if (deactivateStates.get(jobId).getDidState().get("state").equals("failed")) {
+				}
+				else if (deactivateStates.get(jobId).getDidState().get("state").equals("failed")) {
 					log.debug("Requested job is failed. Removing it from the create states, returning its state: {}",
-							() -> state);
+							  () -> state);
 					deactivateStates.remove(jobId);
 					return state;
-				} else if (getBitcoinConfirmationTracker(
+				}
+				else if (getBitcoinConfirmationTracker(
 						Chain.fromString((String) state.getMethodMetadata().get("chain")))
-								.checkConfirmationsWithJobID(jobId)) {
+						.checkConfirmationsWithJobID(jobId)) {
 					log.debug("TX is already confirmed, sending it for the completion!");
 					DidBtcrJob job = unconfirmedJobs.get(jobId);
 					CompletableFuture<Void> completeJob = CompletableFuture.runAsync(() -> {
@@ -707,10 +740,12 @@ public class DidBtcrDriver extends AbstractDriver implements Driver {
 						log.debug("Job {} is completed with the fallback triggering.", () -> jobId);
 						return deactivateStates.remove(jobId);
 					}
-				} else {
+				}
+				else {
 					return deactivateStates.get(jobId);
 				}
-			} else {
+			}
+			else {
 				throw new RegistrationException("Invalid JobID"); // Note: This will be same for the old jobIDs too
 			}
 		}
@@ -725,7 +760,7 @@ public class DidBtcrDriver extends AbstractDriver implements Driver {
 		log.debug("New deactivation request is received: {}", () -> deactivateRequest);
 
 		final Chain chain = deactivateRequest.getOptions() == null ? Chain.TESTNET
-				: Chain.fromString((String) deactivateRequest.getOptions().get("chain"));
+																   : Chain.fromString((String) deactivateRequest.getOptions().get("chain"));
 
 		log.debug("Deactivation Request will be processed on chain {}", chain);
 
@@ -755,18 +790,18 @@ public class DidBtcrDriver extends AbstractDriver implements Driver {
 	@Override
 	public Map<String, Object> properties() {
 
-		if(propsToShow == null){
+		if (propsToShow == null) {
 			final ObjectMapper mapper = new ObjectMapper();
 			mapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
 			mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 			propsToShow = mapper.convertValue(configs, new TypeReference<Map<String, Object>>() {});
-			propsToShow.put("certificateMainnet","................................");
+			propsToShow.put("certificateMainnet", "................................");
 			propsToShow.put("certificateTestnet", "................................");
-			propsToShow.put("rpcUrlMainnet","................................");
+			propsToShow.put("rpcUrlMainnet", "................................");
 			propsToShow.put("rpcUrlTestnet", "................................");
 		}
 
-		return propsToShow;
+		return Collections.unmodifiableMap(propsToShow);
 	}
 
 	public void completionReady(String jobId) {
@@ -782,14 +817,14 @@ public class DidBtcrDriver extends AbstractDriver implements Driver {
 	public BitcoinConfirmationTracker getBitcoinConfirmationTracker(Chain chain) {
 		Preconditions.checkNotNull(chain, "Chain cannot be null!");
 		switch (chain) {
-		case MAINNET:
-			return confirmationTrackerMainnet;
-		case TESTNET:
-			return confirmationTrackerTestnet;
-		case REGTESTNET:
-			return confirmationTrackerRegtest;
-		default:
-			throw new IllegalArgumentException("No such chain!");
+			case MAINNET:
+				return confirmationTrackerMainnet;
+			case TESTNET:
+				return confirmationTrackerTestnet;
+			case REGTESTNET:
+				return confirmationTrackerRegtest;
+			default:
+				throw new IllegalArgumentException("No such chain!");
 		}
 	}
 
@@ -803,81 +838,88 @@ public class DidBtcrDriver extends AbstractDriver implements Driver {
 			CreateState state = createStates.get(jobId);
 			SetBtcrCreateStateFailed.setStateFail(state, reason, initTime);
 			createStates.put(jobId, state);
-		} else if (jobType == JobType.UPDATE) {
+		}
+		else if (jobType == JobType.UPDATE) {
 			UpdateState state = updateStates.get(jobId);
 			SetBtcrCreateStateFailed.setStateFail(state, reason, initTime);
 			updateStates.put(jobId, state);
-		} else {
+		}
+		else {
 			DeactivateState state = deactivateStates.get(jobId);
 			SetBtcrCreateStateFailed.setStateFail(state, reason, initTime);
 			deactivateStates.put(jobId, state);
 		}
 	}
 
-	public BitcoinJWalletAppKit getWalletService(Chain chain) {
-		Preconditions.checkNotNull(chain, "Chain cannot be null!");
-		switch (chain) {
-		case MAINNET:
-			return walletServiceMainnet;
-		case TESTNET:
-			return walletServiceTestnet;
-		case REGTESTNET:
-			return walletServiceRegtest;
-		default:
-			throw new IllegalArgumentException("No such chain!");
-		}
-	}
-
 	public FundingService getFundingService(Chain chain) {
 		Preconditions.checkNotNull(chain, "Chain cannot be null!");
 		switch (chain) {
-		case MAINNET:
-			return fundingServiceMainnet;
-		case TESTNET:
-			return fundingServiceTestnet;
-		case REGTESTNET:
-			return fundingServiceRegtest;
-		default:
-			throw new IllegalArgumentException("No such chain!");
+			case MAINNET:
+				return fundingServiceMainnet;
+			case TESTNET:
+				return fundingServiceTestnet;
+			case REGTESTNET:
+				return fundingServiceRegtest;
+			default:
+				throw new IllegalArgumentException("No such chain!");
+		}
+	}
+
+	public BitcoinJWalletAppKit getWalletService(Chain chain) {
+		Preconditions.checkNotNull(chain, "Chain cannot be null!");
+		switch (chain) {
+			case MAINNET:
+				return walletServiceMainnet;
+			case TESTNET:
+				return walletServiceTestnet;
+			case REGTESTNET:
+				return walletServiceRegtest;
+			default:
+				throw new IllegalArgumentException("No such chain!");
 		}
 	}
 
 	public void jobCompleted(String jobId) {
 		unconfirmedJobs.remove(jobId);
-		log.debug("Job: {} is completed!", () -> jobId);
+		log.info("Job: {} is completed!", () -> jobId);
+	}
+
+	public void addFundingRequiredJob(DidBtcrJob job) {
+		fundingRequiredJobs.put(job.getJobId(), job);
+		log.info("Job {} waiting for funding!", job::getJobId);
 	}
 
 	public void addNewJob(DidBtcrJob job) {
-		log.debug("New job sent to confirmation queue...");
+		log.info("New job sent to confirmation queue...");
 		unconfirmedJobs.put(job.getJobId(), job);
-		log.debug("Job with id {} is in unconfirmed job queue now!", job::getJobId);
+		log.info("Job with id {} is in unconfirmed job queue now!", job::getJobId);
 	}
 
 	public BitcoindRPCBitcoinConnection getRpcClient(Chain chain) {
 		Preconditions.checkNotNull(chain, ErrorMessages.CHAIN_IS_NULL);
 		switch (chain) {
-		case MAINNET:
-			return rpcClientMainNet;
-		case TESTNET:
-			return rpcClientTestNet;
-		case REGTESTNET:
-			return rpcClientRegtest;
-		default:
-			throw new IllegalArgumentException(ErrorMessages.UNKNOWN_CHAIN);
+			case MAINNET:
+				return rpcClientMainNet;
+			case TESTNET:
+				return rpcClientTestNet;
+			case REGTESTNET:
+				return rpcClientRegtest;
+			default:
+				throw new IllegalArgumentException(ErrorMessages.UNKNOWN_CHAIN);
 		}
 	}
 
 	public Context getContext(Chain chain) {
 		Preconditions.checkNotNull(chain, ErrorMessages.CHAIN_IS_NULL);
 		switch (chain) {
-		case MAINNET:
-			return contextMainnet;
-		case TESTNET:
-			return contextTestnet;
-		case REGTESTNET:
-			return contextRegtest;
-		default:
-			throw new IllegalArgumentException(ErrorMessages.UNKNOWN_CHAIN);
+			case MAINNET:
+				return contextMainnet;
+			case TESTNET:
+				return contextTestnet;
+			case REGTESTNET:
+				return contextRegtest;
+			default:
+				throw new IllegalArgumentException(ErrorMessages.UNKNOWN_CHAIN);
 		}
 	}
 

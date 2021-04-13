@@ -1,24 +1,22 @@
 package uniregistrar.driver.did.btcr;
 
+import com.google.common.base.MoreObjects;
+import foundation.identity.did.Authentication;
+import foundation.identity.did.Service;
+import foundation.identity.did.VerificationMethod;
+import info.weboftrust.btctxlookup.Chain;
+import org.bitcoinj.core.ECKey;
+import uniregistrar.driver.did.btcr.enums.FundingType;
+import uniregistrar.driver.did.btcr.enums.JobType;
+
 import java.net.URI;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
-import foundation.identity.did.Authentication;
-import foundation.identity.did.Service;
-import foundation.identity.did.VerificationMethod;
-import org.bitcoinj.core.ECKey;
-
-import com.google.common.base.MoreObjects;
-
-import info.weboftrust.btctxlookup.Chain;
-import uniregistrar.driver.did.btcr.enums.FundingType;
-import uniregistrar.driver.did.btcr.enums.JobType;
-
 public class DidBtcrJob {
-	private final String jobId;
+	private String jobId;
 	private final Chain chain;
 	private final String transactionHash;
 	private final URI didContinuationUri;
@@ -34,22 +32,31 @@ public class DidBtcrJob {
 	private String identifier = null;
 
 	public DidBtcrJob(Chain chain, String transactionHash, URI didContinuationUri, ECKey privateKey, ECKey changeKey,
-			List<Service> addServices, List<VerificationMethod> addVerificationMethods,
-			List<Authentication> addAuthentications, JobType jobType, boolean rotateKey, FundingType fundingType) {
-		this.jobId = UUID.randomUUID().toString();
+					  List<Service> addServices, List<VerificationMethod> addVerificationMethods,
+					  List<Authentication> addAuthentications, JobType jobType, boolean rotateKey, FundingType fundingType) {
+
+		this(UUID.randomUUID().toString(), chain, transactionHash, didContinuationUri, privateKey, changeKey, addServices, addVerificationMethods,
+			 addAuthentications, jobType, rotateKey, fundingType);
+	}
+
+	public DidBtcrJob(String jobId, Chain chain, String transactionHash, URI didContinuationUri, ECKey privateKey, ECKey changeKey,
+					  List<Service> addServices, List<VerificationMethod> addVerificationMethods,
+					  List<Authentication> addAuthentications, JobType jobType, boolean rotateKey,
+					  FundingType fundingType) {
+		this.jobId = jobId;
 		this.chain = chain;
 		this.transactionHash = transactionHash;
 		this.didContinuationUri = didContinuationUri;
 		this.privateKey = privateKey;
+		this.changeKey = changeKey;
 		this.addServices = addServices == null ? null : Collections.unmodifiableList(addServices);
 		this.addVerificationMethods = addVerificationMethods == null ? null
-				: Collections.unmodifiableList(addVerificationMethods);
+																	 : Collections.unmodifiableList(addVerificationMethods);
 		this.addAuthentications = addAuthentications == null ? null : Collections.unmodifiableList(addAuthentications);
 		this.jobType = jobType;
-		this.changeKey = changeKey;
 		this.rotateKey = rotateKey;
-		this.fundingType = fundingType;
 		this.creationTime = Instant.now().getEpochSecond();
+		this.fundingType = fundingType;
 	}
 
 	public FundingType getFundingType() {
@@ -58,6 +65,10 @@ public class DidBtcrJob {
 
 	public String getIdentifier() {
 		return identifier;
+	}
+
+	public void setJobId(String jobId) {
+		this.jobId = jobId;
 	}
 
 	public void setIdentifier(String identifier) {
@@ -118,10 +129,10 @@ public class DidBtcrJob {
 	@Override
 	public String toString() {
 		return MoreObjects.toStringHelper(this).add("jobId", jobId).add("identifier", identifier)
-				.add("chain", chain.toString()).add("transactionHash", transactionHash)
-				.add("didContinuationUri", didContinuationUri).add("privateKey", privateKey).add("changeKey", changeKey)
-				.add("addServices", addServices).add("addVerificationMethods", addVerificationMethods)
-				.add("addAuthentications", addAuthentications).add("jobType", jobType).add("rotateKey", rotateKey)
-				.add("creationTime", creationTime).toString();
+						  .add("chain", chain.toString()).add("transactionHash", transactionHash)
+						  .add("didContinuationUri", didContinuationUri).add("privateKey", privateKey).add("changeKey", changeKey)
+						  .add("addServices", addServices).add("addVerificationMethods", addVerificationMethods)
+						  .add("addAuthentications", addAuthentications).add("jobType", jobType).add("rotateKey", rotateKey)
+						  .add("creationTime", creationTime).toString();
 	}
 }

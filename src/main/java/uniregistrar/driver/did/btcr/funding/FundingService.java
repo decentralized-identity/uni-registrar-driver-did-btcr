@@ -10,7 +10,7 @@ public interface FundingService {
 
 	/**
 	 * Used for server-side funded registration operations
-	 * 
+	 *
 	 * @return new {@link BtcrFund} with required transactional information to spend
 	 *         targeted output, including its private key
 	 * @throws FundingException Funding exception indicator
@@ -32,7 +32,7 @@ public interface FundingService {
 			throws FundingException;
 
 	/**
-	 * 
+	 *
 	 * @param fundingTicket UUID in string identifies the ticket
 	 * @param rotateKey     When true, new random ECKey is created for change,
 	 *                      funding * key is used for the change key otherwise
@@ -44,7 +44,7 @@ public interface FundingService {
 
 	/**
 	 * Checks if server has UTXO for funding registration process
-	 * 
+	 *
 	 * @implNote Relies on non-removed imported key size of the UTXOWallet
 	 * @return True if wallet has UTXOs, false otherwise
 	 */
@@ -61,4 +61,8 @@ public interface FundingService {
 	 * @return Address to fund with funding a funding ticket (UUID)
 	 */
 	String askForFundingString();
+
+	BtcrFund prepareFund();
+
+	String askForFundingString(BtcrFund fund);
 }

@@ -1,20 +1,13 @@
 package uniregistrar.driver.did.btcr.handlers;
 
-import java.net.URI;
-import java.nio.charset.StandardCharsets;
-import java.util.LinkedHashMap;
-import java.util.Map;
-
+import com.google.common.base.Preconditions;
+import info.weboftrust.btctxlookup.Chain;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.bitcoinj.core.*;
 import org.bitcoinj.script.Script;
 import org.bitcoinj.script.ScriptBuilder;
 import org.bitcoinj.wallet.SendRequest;
-
-import com.google.common.base.Preconditions;
-
-import info.weboftrust.btctxlookup.Chain;
 import uniregistrar.RegistrationException;
 import uniregistrar.driver.did.btcr.DidBtcrDriver;
 import uniregistrar.driver.did.btcr.DidBtcrJob;
@@ -28,6 +21,13 @@ import uniregistrar.driver.did.btcr.state.SetCreateStateWaitConfirm;
 import uniregistrar.driver.did.btcr.util.*;
 import uniregistrar.request.CreateRequest;
 import uniregistrar.state.CreateState;
+import uniregistrar.state.SetCreateStateAction;
+
+import java.net.URI;
+import java.nio.charset.StandardCharsets;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Optional;
 
 /**
  * Class to handle create requests
@@ -41,7 +41,6 @@ public class CreateHandlerBtcr implements CreateHandler {
 
 	/**
 	 * Constructor for CreateHandler
-	 *
 	 * @param driver DidBtcrDriver
 	 */
 	public CreateHandlerBtcr(DidBtcrDriver driver) {
@@ -55,89 +54,124 @@ public class CreateHandlerBtcr implements CreateHandler {
 	 * @throws RegistrationException Registration exception
 	 */
 	@Override
-	public CreateState handle(CreateRequest request) throws RegistrationException {
+	public CreateState handle(CreateRequest request, BtcrFund btcrFund) throws RegistrationException {
 		// If no chain is provided default to TESTNET
 		final Chain chain = Chain.fromString(ParsingUtils.parseChain(request.getOptions()));
 		log.debug("Request will be processed on chain: {}", () -> chain);
 
-		BtcrFund opFund;
+		BtcrFund opFund = btcrFund;
 		boolean rotateKey = ParsingUtils.parseBoolean(request.getOptions().get("rotateKey"));
 		FundingService fundingService = driver.getFundingService(chain);
 
-		// Check if a funding key is provided
-		// Initially expect funding tx to be provided.
-		if (request.getSecret() != null && request.getSecret().get("privateKeyWiF") != null
-				&& request.getSecret().get("fundingTX") != null && request.getSecret().get("outputIndex") != null) {
-			String fKeyStr = (String) request.getSecret().get("privateKeyWiF");
-			String fTx = (String) request.getSecret().get("fundingTX");
-			log.debug("Operation is self funded. Funding key: {} \nFunding TX: {}", fKeyStr, fTx);
-			// Init a funding key
-			ECKey fundingKey;
-			fundingKey = ECKeyUtils.convertWifKeyToECKey(fKeyStr, chain.toString());
+		if (opFund == null) {
 
-			if (rotateKey) {
-				try {
-					opFund = fundingService.getSelfFund(fTx, fundingKey,
-							(Integer) request.getSecret().get("outputIndex"), true);
-				} catch (FundingException e) {
-					throw new RegistrationException(e);
+			// Check if a funding key is provided
+			// Initially expect funding tx to be provided.
+			if (request.getSecret() != null && request.getSecret().get("privateKeyWiF") != null
+					&& request.getSecret().get("fundingTX") != null && request.getSecret().get("outputIndex") != null) {
+				String fKeyStr = (String) request.getSecret().get("privateKeyWiF");
+				String fTx = (String) request.getSecret().get("fundingTX");
+				log.debug("Operation is self funded. Funding key: {} \nFunding TX: {}", fKeyStr, fTx);
+				// Init a funding key
+				ECKey fundingKey;
+				fundingKey = ECKeyUtils.convertWifKeyToECKey(fKeyStr, chain.toString());
+
+				if (rotateKey) {
+					try {
+						opFund = fundingService.getSelfFund(fTx, fundingKey,
+															(Integer) request.getSecret().get("outputIndex"), true);
+					} catch (FundingException e) {
+						throw new RegistrationException(e);
+					}
 				}
-			} else {
-				try {
-					opFund = fundingService.getSelfFund(fTx, fundingKey,
-							(Integer) request.getSecret().get("outputIndex"), false);
-				} catch (FundingException e) {
-					throw new RegistrationException(e);
+				else {
+					try {
+						opFund = fundingService.getSelfFund(fTx, fundingKey,
+															(Integer) request.getSecret().get("outputIndex"), false);
+					} catch (FundingException e) {
+						throw new RegistrationException(e);
+					}
 				}
 			}
-		} else if (request.getSecret() != null && request.getSecret().get("fundingTicket") != null) {
-			// If user funded the given address, it should be available
-			try {
-				String fTicket = (String) request.getSecret().get("fundingTicket");
-				log.debug("A funding ticket ({}) is given.", () -> fTicket);
-				opFund = fundingService.getExpectedFund(fTicket, true);
-			} catch (FundingException e) {
-				throw new RegistrationException(e.getMessage());
-			}
-		} else {
-			if (fundingService.canServerFund()) {
-				log.debug("Trying to allocate a server-paid Fund");
+			else if (request.getSecret() != null && request.getSecret().get("fundingTicket") != null) {
+				// If user funded the given address, it should be available
 				try {
-					opFund = fundingService.getServerSideFund();
+					String fTicket = (String) request.getSecret().get("fundingTicket");
+					log.debug("A funding ticket ({}) is given.", () -> fTicket);
+					opFund = fundingService.getExpectedFund(fTicket, true);
 				} catch (FundingException e) {
-					throw new RegistrationException(e);
+					throw new RegistrationException(e.getMessage());
 				}
-				if (opFund == null) {
-					log.debug("!!Ups!! Either server processing insane amount of requests or we found a bug!");
-					String message = fundingService.askForFundingString();
-					throw new RegistrationException(message);
+			}
+			else {
+				if (fundingService.canServerFund()) {
+					log.debug("Trying to allocate a server-paid Fund");
+					try {
+						opFund = fundingService.getServerSideFund();
+					} catch (FundingException e) {
+						throw new RegistrationException(e);
+					}
+					if (opFund == null) {
+						log.debug("!!Ups!! Either server processing insane amount of requests or we found a bug!");
+						String message = fundingService.askForFundingString();
+						throw new RegistrationException(message);
+					}
 				}
-			} else {
-				log.debug("Wallet response no to funding request...");
-				String message = fundingService.askForFundingString();
-				throw new RegistrationException(message);
+				else {
+					log.debug("Wallet response no to funding request...");
+					BtcrFund fund = fundingService.prepareFund();
+					String message = fundingService.askForFundingString(fund);
+					final DidBtcrJob job = new DidBtcrJob(fund.getUuid(), chain, null, null, fund.getFundingKey(), fund.getChangeKey(),
+														  request.getDidDocument() == null ? null : request.getDidDocument().getServices(),
+														  request.getDidDocument() == null ? null : request.getDidDocument().getVerificationMethods(),
+														  request.getDidDocument() == null ? null : request.getDidDocument().getAuthentications(),
+														  JobType.CREATE, rotateKey, fund.getFundingType());
+
+					driver.addFundingRequiredJob(job);
+					CreateState state = CreateState.build();
+					state.setJobId(job.getJobId());
+					SetCreateStateAction.setStateAction(state, message);
+					return state;
+				}
 			}
 		}
 
-		URI didContinuationUri;
+		Optional<DidBtcrJob> fundingRequiredJob = driver.getAndRemoveFundingRequiredJob(opFund.getUuid());
+		fundingRequiredJob.ifPresent(job -> log.debug("Funding required job '{}' is found", job.getJobId()));
+
+		URI didContinuationUri = null;
 		Transaction tx = new Transaction(BitcoinUtils.chainToNetworkParameters(chain));
 
 		if (request.getDidDocument() != null && ((request.getDidDocument().getServices() != null
 				&& !request.getDidDocument().getServices().isEmpty())
 				|| (request.getDidDocument().getVerificationMethods() != null
-						&& !request.getDidDocument().getVerificationMethods().isEmpty())
+				&& !request.getDidDocument().getVerificationMethods().isEmpty())
 				|| (request.getDidDocument().getAuthentications() != null
-						&& !request.getDidDocument().getAuthentications().isEmpty()))) {
+				&& !request.getDidDocument().getAuthentications().isEmpty()))) {
 			log.debug("Request is customized, preparing a did-continuation document...");
 			didContinuationUri = configs.getDidDocContinuation().prepareDIDDocContinuation(null);
 			log.debug("didContinuationUri: {}", didContinuationUri::toString);
-		} else {
+		}
+		else if (fundingRequiredJob.isPresent()) {
+			DidBtcrJob j = fundingRequiredJob.get();
+			if ((j.getAddServices() != null
+					&& !j.getAddServices().isEmpty())
+					|| (j.getAddVerificationMethods() != null
+					&& !j.getAddVerificationMethods().isEmpty()
+					|| (j.getAddAuthentications() != null
+					&& !j.getAddAuthentications().isEmpty()))) {
+				log.debug("Request is customized, preparing a did-continuation document...");
+				didContinuationUri = configs.getDidDocContinuation().prepareDIDDocContinuation(null);
+				log.debug("didContinuationUri: {}", didContinuationUri::toString);
+			}
+		}
+		else {
 			log.debug("No extra specification given, DDO won't be created.");
 			didContinuationUri = null;
 		}
 
 		log.debug("Preparing continuation DID Document: {}",
-				() -> (didContinuationUri != null ? didContinuationUri.toString() : "empty"));
+				  didContinuationUri != null ? didContinuationUri.toString() : "empty");
 
 		if (didContinuationUri != null) {
 			log.debug("Creating a OP_RETURN script for the didContinuationUri...");
@@ -146,7 +180,7 @@ public class CreateHandlerBtcr implements CreateHandler {
 		}
 
 		final Address changeAddress = BitcoinUtils.getAddrStringFromKey(chain, opFund.getChangeKey(),
-				configs.getPrefScriptType());
+																		configs.getPrefScriptType());
 		opFund.setChangeAddress(changeAddress);
 		final Script outputScript = ScriptBuilder.createOutputScript(changeAddress);
 		tx.addOutput(opFund.getAmount().subtract(Transaction.REFERENCE_DEFAULT_MIN_TX_FEE), outputScript);
@@ -161,7 +195,8 @@ public class CreateHandlerBtcr implements CreateHandler {
 			} catch (TransactionException e) {
 				throw new RegistrationException(e.getMessage(), e);
 			}
-		} else {
+		}
+		else {
 			tx.addInput(opFund.getTransactionOutput());
 			SendRequest sr;
 			try {
@@ -172,7 +207,7 @@ public class CreateHandlerBtcr implements CreateHandler {
 			sent = sr.tx;
 		}
 
-		Preconditions.checkNotNull(sent, "Failed to fund operation!");
+		Preconditions.checkNotNull(sent, "Failed to btcrFund operation!");
 
 		final String txID = sent.getTxId().toString();
 
@@ -190,13 +225,23 @@ public class CreateHandlerBtcr implements CreateHandler {
 		}
 
 		ECKey changeKey = opFund.getChangeKey();
-
+		DidBtcrJob job;
 		// CREATE STATE WAIT: JOBID
-		final DidBtcrJob job = new DidBtcrJob(chain, txID, didContinuationUri, opFund.getFundingKey(), changeKey,
-				request.getDidDocument() == null ? null : request.getDidDocument().getServices(),
-				request.getDidDocument() == null ? null : request.getDidDocument().getVerificationMethods(),
-				request.getDidDocument() == null ? null : request.getDidDocument().getAuthentications(),
-				JobType.CREATE, rotateKey, opFund.getFundingType());
+		if (fundingRequiredJob.isPresent()) {
+			DidBtcrJob j = fundingRequiredJob.get();
+			job = new DidBtcrJob(j.getJobId(), chain, txID, didContinuationUri, opFund.getFundingKey(), changeKey,
+								 j.getAddServices(),
+								 j.getAddVerificationMethods(),
+								 j.getAddAuthentications(),
+								 JobType.CREATE, rotateKey, opFund.getFundingType());
+		}
+		else {
+			job = new DidBtcrJob(chain, txID, didContinuationUri, opFund.getFundingKey(), changeKey,
+								 request.getDidDocument() == null ? null : request.getDidDocument().getServices(),
+								 request.getDidDocument() == null ? null : request.getDidDocument().getVerificationMethods(),
+								 request.getDidDocument() == null ? null : request.getDidDocument().getAuthentications(),
+								 JobType.CREATE, rotateKey, opFund.getFundingType());
+		}
 
 		final String cJobId = job.getJobId();
 
@@ -217,7 +262,8 @@ public class CreateHandlerBtcr implements CreateHandler {
 		methodMetadata.put("chain", chain.toString());
 		methodMetadata.put("transactionHash", txID);
 		methodMetadata.put("balance", opFund.getAmount()
-				.subtract(sent.getFee() == null ? Transaction.REFERENCE_DEFAULT_MIN_TX_FEE : sent.getFee()).getValue());
+											.subtract(sent.getFee() == null ? Transaction.REFERENCE_DEFAULT_MIN_TX_FEE : sent.getFee())
+											.getValue());
 		methodMetadata.put("changeAddress", "" + changeAddress);
 		methodMetadata.put("publicKeyHex", "" + publicKeyHex);
 		methodMetadata.put("didContinuationUri", "" + didContinuationUri);
