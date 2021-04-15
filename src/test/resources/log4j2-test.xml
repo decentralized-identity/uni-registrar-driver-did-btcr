@@ -18,6 +18,12 @@
 		<Logger name="org.bitcoinj.core.PeerGroup" level="error" additivity="false">
 			<AppenderRef ref="Console"/>
 		</Logger>
+		<Logger name="org.bitcoinj.core.PeerSocketHandler" level="error" additivity="false">
+			<AppenderRef ref="Console"/>
+		</Logger>
+		<Logger name="org.bitcoinj.core.Peer" level="error" additivity="false">
+			<AppenderRef ref="Console"/>
+		</Logger>
 		<Root level="info">
 			<AppenderRef ref="Console"/>
 		</Root>
