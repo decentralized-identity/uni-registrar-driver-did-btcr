@@ -16,6 +16,7 @@ import uniregistrar.driver.did.btcr.DriverConstants;
 import uniregistrar.driver.did.btcr.enums.FundingType;
 import uniregistrar.driver.did.btcr.util.BitcoinUtils;
 import uniregistrar.driver.did.btcr.util.ECKeyUtils;
+import wf.bitcoin.javabitcoindrpcclient.BitcoinRPCException;
 
 import javax.annotation.Nullable;
 import java.util.LinkedHashMap;
@@ -135,21 +136,26 @@ public class InMemoryFundingService implements FundingService {
 			log.debug("Failed to find/load the fund for given funding ticket: {} ", fundingTicket);
 			throw new FundingException("No such a fund is found!");
 		}
-		else {
-			log.debug("Fund found. Removing it from the expected-funds!");
-			expectedFunds.remove(fundingTicket);
-		}
 
 		Map<String, Long> unspents;
 		TransactionOutPoint outPoint;
+		String address = expectedFund.getFundAddress().toString();
 		try {
-			unspents = driver.getRpcClient(chain).findUnspents(expectedFund.getFundAddress().toString());
-			Map.Entry<String, Long> entry = unspents.entrySet().iterator().next();
-			Transaction wtx = BitcoinUtils.fromHexToBitcoinJTX(entry.getKey(), chain);
-			outPoint = new TransactionOutPoint(params, entry.getValue(), wtx);
-		} catch (BitcoinConnectionException e) {
-			throw new FundingException(e);
+			unspents = driver.getRpcClient(chain).findUnspents(address);
+		} catch (BitcoinRPCException | BitcoinConnectionException e) {
+			if (e.getMessage().contains("address")) {
+				throw new FundingException("Cannot find a UTXO for the given address '" + address
+												   + "'.\nPlease fund the address and check back again with the jobId '"
+												   + expectedFund.getUuid() + "'."
+												   + "\nIf you have already funded the address, please wait for it to be confirmed on the blockchain.");
+			}
+			else
+				throw new FundingException(e.getMessage());
 		}
+
+		Map.Entry<String, Long> entry = unspents.entrySet().iterator().next();
+		Transaction wtx = BitcoinUtils.fromHexToBitcoinJTX(entry.getKey(), chain);
+		outPoint = new TransactionOutPoint(params, entry.getValue(), wtx);
 
 		if (outPoint.getConnectedOutput() == null) {
 			throw new FundingException("Cannot locate the user fund!");
@@ -163,6 +169,9 @@ public class InMemoryFundingService implements FundingService {
 		expectedFund.setTransactionOutput(outPoint.getConnectedOutput());
 		expectedFund.setFundingType(FundingType.USER);
 		expectedFund.setChangeKey(rotateKey ? ECKeyUtils.getFreshKey() : expectedFund.getFundingKey());
+
+		log.debug("Fund found for {}. Removing it from the expected-funds!", expectedFund::getUuid);
+		expectedFunds.remove(fundingTicket);
 
 		return expectedFund;
 	}
@@ -231,6 +240,6 @@ public class InMemoryFundingService implements FundingService {
 		log.debug("Expected funds size: {}", expectedFunds::size);
 
 		return "Please fund the address " + fund.getFundAddress()
-												.toString() + " and check the operation with jobId set to " + fund.getUuid();
+												.toString() + " and check the operation with jobId set to '" + fund.getUuid() + "'";
 	}
 }

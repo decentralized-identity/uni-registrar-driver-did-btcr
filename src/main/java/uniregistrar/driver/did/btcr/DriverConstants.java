@@ -1,5 +1,7 @@
 package uniregistrar.driver.did.btcr;
 
+import info.weboftrust.btctxlookup.BitcoinClientID;
+import info.weboftrust.btctxlookup.Chain;
 import org.bitcoinj.core.Coin;
 import org.bitcoinj.core.NetworkParameters;
 import org.bitcoinj.core.Transaction;
@@ -7,9 +9,6 @@ import org.bitcoinj.params.MainNetParams;
 import org.bitcoinj.params.RegTestParams;
 import org.bitcoinj.params.TestNet3Params;
 import org.bitcoinj.script.Script;
-
-import info.weboftrust.btctxlookup.BitcoinClientID;
-import info.weboftrust.btctxlookup.Chain;
 
 public final class DriverConstants {
 

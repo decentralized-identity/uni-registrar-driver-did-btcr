@@ -20,7 +20,6 @@ import org.bitcoinj.params.RegTestParams;
 import org.bitcoinj.params.TestNet3Params;
 import org.bitcoinj.wallet.Wallet;
 import uniregistrar.RegistrationException;
-import uniregistrar.driver.AbstractDriver;
 import uniregistrar.driver.Driver;
 import uniregistrar.driver.did.btcr.enums.JobType;
 import uniregistrar.driver.did.btcr.funding.BtcrFund;
@@ -54,7 +53,7 @@ import java.util.Optional;
 import java.util.Properties;
 import java.util.concurrent.*;
 
-public class DidBtcrDriver extends AbstractDriver implements Driver {
+public class DidBtcrDriver implements Driver {
 
 	private static final Logger log = LogManager.getLogger(DidBtcrDriver.class);
 	// Keep registration states across components
@@ -477,7 +476,7 @@ public class DidBtcrDriver extends AbstractDriver implements Driver {
 	}
 
 	public Optional<DidBtcrJob> getAndRemoveFundingRequiredJob(String jobId) {
-		return Optional.ofNullable(fundingRequiredJobs.remove(jobId));
+		return Optional.ofNullable(jobId != null && fundingRequiredJobs.containsKey(jobId) ? fundingRequiredJobs.remove(jobId) : null);
 	}
 
 	@Override

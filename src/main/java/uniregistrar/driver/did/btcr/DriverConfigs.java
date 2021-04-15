@@ -1,19 +1,17 @@
 package uniregistrar.driver.did.btcr;
 
-import java.util.List;
-
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.google.common.base.Preconditions;
+import info.weboftrust.btctxlookup.BitcoinClientID;
+import info.weboftrust.btctxlookup.Chain;
 import org.bitcoinj.core.ECKey;
 import org.bitcoinj.core.PeerAddress;
 import org.bitcoinj.script.Script;
-
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.google.common.base.Preconditions;
-
-import info.weboftrust.btctxlookup.BitcoinClientID;
-import info.weboftrust.btctxlookup.Chain;
 import uniregistrar.driver.did.btcr.diddoccontinuation.DIDDocContinuation;
 import uniregistrar.driver.did.btcr.diddoccontinuation.DIDDocFileNameStrategy;
 import uniregistrar.driver.did.btcr.util.ErrorMessages;
+
+import java.util.List;
 
 public class DriverConfigs {
 	private String rpcUrlMainnet;
