@@ -179,7 +179,7 @@ public class UpdateHandlerBtcr implements UpdateHandler {
 
 		DidBtcrJob job = new DidBtcrJob(chain, sent.getTxId().toString(), didContinuationUri, opFund.getFundingKey(),
 				opFund.getChangeKey(), doc == null ? null : doc.getServices(),
-				doc == null ? null : doc.getVerificationMethods(), doc == null ? null : doc.getAuthentications(),
+				doc == null ? null : doc.getVerificationMethods(), doc == null ? null : doc.getAuthenticationVerificationMethods(),
 				JobType.UPDATE, rotateKey, opFund.getFundingType());
 
 		job.setIdentifier(identifier);

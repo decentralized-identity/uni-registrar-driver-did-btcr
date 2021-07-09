@@ -133,7 +133,7 @@ public class CompletionHandlerBtcr implements CompletionHandler {
 		final ECKey privateKey = job.getChangeKey();
 		final List<Service> addServices = job.getAddServices();
 		final List<VerificationMethod> verificationMethods = job.getAddVerificationMethods();
-		final List<Authentication> addAuthentications = job.getAddAuthentications();
+		final List<VerificationMethod> addAuthentications = job.getAddAuthentications();
 		final NetworkParameters params = BitcoinUtils.chainToNetworkParameters(chain);
 
 		final ChainAndLocationData chainAndLocationData = NetworkUtils.getChainAndLocationData(chain, txHash,
@@ -144,7 +144,7 @@ public class CompletionHandlerBtcr implements CompletionHandler {
 			log.debug("Storing the DID Continuation Document with URI: {}", () -> didContinuationUri);
 
 			final DIDDocument didContinuationDocument = DIDDocument.builder().id(URI.create(did))
-					.verificationMethods(verificationMethods).authentications(addAuthentications).services(addServices)
+					.verificationMethods(verificationMethods).authenticationVerificationMethods(addAuthentications).services(addServices)
 					.build();
 
 			log.debug("DIDDocument created for DID: {}", didContinuationDocument::getId);
@@ -214,7 +214,7 @@ public class CompletionHandlerBtcr implements CompletionHandler {
 		final ECKey privateKey = job.getPrivateKey();
 		final List<Service> addServices = job.getAddServices();
 		final List<VerificationMethod> verificationMethods = job.getAddVerificationMethods();
-		final List<Authentication> addAuthentications = job.getAddAuthentications();
+		final List<VerificationMethod> addAuthentications = job.getAddAuthentications();
 		final NetworkParameters params = BitcoinUtils.chainToNetworkParameters(chain);
 
 		final ChainAndLocationData chainAndLocationData = NetworkUtils.getChainAndLocationData(chain, txHash,
@@ -226,7 +226,7 @@ public class CompletionHandlerBtcr implements CompletionHandler {
 			log.debug("Storing the DID Continuation Document with URI: {}", didContinuationUri::toString);
 
 			final DIDDocument didContinuationDocument = DIDDocument.builder().id(URI.create(did))
-					.verificationMethods(verificationMethods).authentications(addAuthentications).services(addServices)
+					.verificationMethods(verificationMethods).authenticationVerificationMethods(addAuthentications).services(addServices)
 					.build();
 
 			log.debug("Created DIDDocument for DID: {}", didContinuationDocument::getId);

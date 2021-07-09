@@ -47,10 +47,7 @@ import uniregistrar.state.UpdateState;
 import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
-import java.util.Collections;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Properties;
+import java.util.*;
 import java.util.concurrent.*;
 
 public class DidBtcrDriver implements Driver {
@@ -220,6 +217,7 @@ public class DidBtcrDriver implements Driver {
 
 			if (openMainnet.isCompletedExceptionally()) {
 				throw new ConfigurationException("Cannot start the mainnet walletAppKit!");
+
 			}
 
 			confirmationTrackerMainnet = new BitcoinConfirmationTracker(this, Chain.MAINNET, configs.getRequiredDepth(),
@@ -256,6 +254,7 @@ public class DidBtcrDriver implements Driver {
 				try {
 					TimeUnit.SECONDS.sleep(1);
 				} catch (InterruptedException e) {
+					Objects.requireNonNull(openTestnet).cancel(true);
 					throw new ConfigurationException(e.getMessage());
 				}
 			}

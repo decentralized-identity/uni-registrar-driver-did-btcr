@@ -1,7 +1,6 @@
 package uniregistrar.driver.did.btcr;
 
 import com.google.common.base.MoreObjects;
-import foundation.identity.did.Authentication;
 import foundation.identity.did.Service;
 import foundation.identity.did.VerificationMethod;
 import info.weboftrust.btctxlookup.Chain;
@@ -24,7 +23,7 @@ public class DidBtcrJob {
 	private final ECKey changeKey;
 	private final List<Service> addServices;
 	private final List<VerificationMethod> addVerificationMethods;
-	private final List<Authentication> addAuthentications;
+	private final List<VerificationMethod> addAuthentications;
 	private final JobType jobType;
 	private final boolean rotateKey;
 	private final long creationTime;
@@ -33,7 +32,7 @@ public class DidBtcrJob {
 
 	public DidBtcrJob(Chain chain, String transactionHash, URI didContinuationUri, ECKey privateKey, ECKey changeKey,
 					  List<Service> addServices, List<VerificationMethod> addVerificationMethods,
-					  List<Authentication> addAuthentications, JobType jobType, boolean rotateKey, FundingType fundingType) {
+					  List<VerificationMethod> addAuthentications, JobType jobType, boolean rotateKey, FundingType fundingType) {
 
 		this(UUID.randomUUID().toString(), chain, transactionHash, didContinuationUri, privateKey, changeKey, addServices, addVerificationMethods,
 			 addAuthentications, jobType, rotateKey, fundingType);
@@ -41,7 +40,7 @@ public class DidBtcrJob {
 
 	public DidBtcrJob(String jobId, Chain chain, String transactionHash, URI didContinuationUri, ECKey privateKey, ECKey changeKey,
 					  List<Service> addServices, List<VerificationMethod> addVerificationMethods,
-					  List<Authentication> addAuthentications, JobType jobType, boolean rotateKey,
+					  List<VerificationMethod> addAuthentications, JobType jobType, boolean rotateKey,
 					  FundingType fundingType) {
 		this.jobId = jobId;
 		this.chain = chain;
@@ -118,7 +117,7 @@ public class DidBtcrJob {
 		return addVerificationMethods;
 	}
 
-	public List<Authentication> getAddAuthentications() {
+	public List<VerificationMethod> getAddAuthentications() {
 		return addAuthentications;
 	}
 

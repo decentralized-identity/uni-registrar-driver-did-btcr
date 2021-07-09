@@ -23,7 +23,7 @@
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<java.version>11</java.version>
-		<did-common-java.version>0.2.0</did-common-java.version>
+		<did-common-java.version>0.3-SNAPSHOT</did-common-java.version>
 		<commons-lang3.version>3.12.0</commons-lang3.version>
 		<bitcoinj-core.version>0.15.8</bitcoinj-core.version>
 		<google.guava.version>30.1-jre</google.guava.version>
@@ -187,7 +187,6 @@
 		<dependency>
 			<groupId>decentralized-identity</groupId>
 			<artifactId>did-common-java</artifactId>
-			<version>${did-common-java.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>com.fasterxml.jackson.core</groupId>

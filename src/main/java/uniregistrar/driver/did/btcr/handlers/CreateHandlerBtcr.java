@@ -124,7 +124,8 @@ public class CreateHandlerBtcr implements CreateHandler {
 					final DidBtcrJob job = new DidBtcrJob(fund.getUuid(), chain, null, null, fund.getFundingKey(), fund.getChangeKey(),
 														  request.getDidDocument() == null ? null : request.getDidDocument().getServices(),
 														  request.getDidDocument() == null ? null : request.getDidDocument().getVerificationMethods(),
-														  request.getDidDocument() == null ? null : request.getDidDocument().getAuthentications(),
+														  request.getDidDocument() == null ? null : request.getDidDocument()
+																										   .getAuthenticationVerificationMethods(),
 														  JobType.CREATE, rotateKey, fund.getFundingType());
 
 					driver.addFundingRequiredJob(job);
@@ -146,8 +147,8 @@ public class CreateHandlerBtcr implements CreateHandler {
 				&& !request.getDidDocument().getServices().isEmpty())
 				|| (request.getDidDocument().getVerificationMethods() != null
 				&& !request.getDidDocument().getVerificationMethods().isEmpty())
-				|| (request.getDidDocument().getAuthentications() != null
-				&& !request.getDidDocument().getAuthentications().isEmpty()))) {
+				|| (request.getDidDocument().getAuthenticationVerificationMethods() != null
+				&& !request.getDidDocument().getAuthenticationVerificationMethods().isEmpty()))) {
 			log.debug("Request is customized, preparing a did-continuation document...");
 			didContinuationUri = configs.getDidDocContinuation().prepareDIDDocContinuation(null);
 			log.debug("didContinuationUri: {}", didContinuationUri::toString);
@@ -239,7 +240,7 @@ public class CreateHandlerBtcr implements CreateHandler {
 			job = new DidBtcrJob(chain, txID, didContinuationUri, opFund.getFundingKey(), changeKey,
 								 request.getDidDocument() == null ? null : request.getDidDocument().getServices(),
 								 request.getDidDocument() == null ? null : request.getDidDocument().getVerificationMethods(),
-								 request.getDidDocument() == null ? null : request.getDidDocument().getAuthentications(),
+								 request.getDidDocument() == null ? null : request.getDidDocument().getAuthenticationVerificationMethods(),
 								 JobType.CREATE, rotateKey, opFund.getFundingType());
 		}
 
