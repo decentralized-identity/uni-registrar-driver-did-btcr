@@ -1,6 +1,6 @@
 # Dockerfile for universalregistrar/driver-did-btcr
 
-FROM maven:3-jdk-11
+FROM maven:3-jdk-11 AS BUILD
 MAINTAINER Markus Sabadello <markus@danubetech.com>
 
 ENV PATH $JAVA_HOME/bin:$PATH
@@ -9,6 +9,8 @@ ENV PATH $JAVA_HOME/bin:$PATH
 
 ADD . /opt/driver-did-btcr
 RUN cd /opt/driver-did-btcr && mvn clean install package -N -DskipTests
+
+FROM jetty:9.4-jre11
 
 # variables
 
@@ -65,9 +67,11 @@ ENV uniregistrar_driver_did_btcr_overWriteDidDocs=true
 ENV uniregistrar_driver_did_btcr_rpcCertMainnet=
 ENV uniregistrar_driver_did_btcr_rpcCertTestnet=
 
+# copy from build stage
+
+COPY --from=build /opt/driver-did-btcr/target/*.war /var/lib/jetty/webapps/ROOT.war
+
 # done
 
 EXPOSE 9080
-
-RUN chmod a+rx /opt/driver-did-btcr/docker/run-driver-did-btcr.sh
-CMD "/opt/driver-did-btcr/docker/run-driver-did-btcr.sh"
+CMD java -Djetty.http.port=9080 -jar /usr/local/jetty/start.jar
