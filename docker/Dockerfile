@@ -8,7 +8,7 @@ ENV PATH $JAVA_HOME/bin:$PATH
 # build driver-did-btcr
 
 ADD . /opt/driver-did-btcr
-RUN cd /opt/driver-did-btcr && mvn clean install package -N -DskipTests
+RUN cd /opt/driver-did-btcr && mvn clean install package -P war -N -DskipTests
 
 FROM jetty:9.4-jre11
 
@@ -23,7 +23,7 @@ ENV uniregistrar_driver_did_btcr_testnetPrefix=
 ENV uniregistrar_driver_did_btcr_mainnetPrefix=
 ENV uniregistrar_driver_did_btcr_regtestPrefix=
 
-ENV uniregistrar_driver_did_btcr_basePath=/var/www/html/btcr-continuation
+ENV uniregistrar_driver_did_btcr_basePath=/opt/btcr-continuation
 ENV uniregistrar_driver_did_btcr_baseUri=http://localhost
 
 ENV uniregistrar_driver_did_btcr_privateKeyMainnet=
@@ -70,8 +70,12 @@ ENV uniregistrar_driver_did_btcr_rpcCertTestnet=
 # copy from build stage
 
 COPY --from=build /opt/driver-did-btcr/target/*.war /var/lib/jetty/webapps/ROOT.war
+COPY --from=build /opt/driver-did-btcr/docker/run-driver-did-btcr.sh /opt
 
 # done
 
 EXPOSE 9080
-CMD java -Djetty.http.port=9080 -jar /usr/local/jetty/start.jar
+
+USER root
+RUN chmod a+rx /opt/run-driver-did-btcr.sh
+CMD "/opt/run-driver-did-btcr.sh"
