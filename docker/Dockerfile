@@ -10,7 +10,7 @@ ENV PATH $JAVA_HOME/bin:$PATH
 ADD . /opt/driver-did-btcr
 RUN cd /opt/driver-did-btcr && mvn clean install package -P war -N -DskipTests
 
-FROM jetty:9.4-jre11
+FROM jetty:9.4-jre11-slim
 
 # variables
 
