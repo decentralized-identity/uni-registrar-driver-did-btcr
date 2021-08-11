@@ -1,5 +1,6 @@
 package uniregistrar.driver.did.btcr.util;
 
+import com.danubetech.keyformats.jose.JWK;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.bitcoinj.core.DumpedPrivateKey;
@@ -7,7 +8,6 @@ import org.bitcoinj.core.ECKey;
 
 import com.danubetech.keyformats.PrivateKey_to_JWK;
 import com.google.common.base.Preconditions;
-import com.nimbusds.jose.jwk.JWK;
 
 public final class ECKeyUtils {
 

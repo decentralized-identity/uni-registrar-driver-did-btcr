@@ -11,14 +11,13 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import com.danubetech.keyformats.jose.JWK;
 import foundation.identity.did.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.bitcoinj.core.Base58;
 import org.bitcoinj.core.ECKey;
 import org.bitcoinj.core.NetworkParameters;
-
-import com.nimbusds.jose.jwk.JWK;
 
 import info.weboftrust.btctxlookup.Chain;
 import info.weboftrust.btctxlookup.ChainAndLocationData;
@@ -174,7 +173,7 @@ public class CompletionHandlerBtcr implements CompletionHandler {
 			jsonKey.put("publicKeyHex", publicKeyHex);
 			jsonKey.put("privateKeyHex", privateKeyHex);
 			jsonKey.put("privateKeyWif", privateKeyWif);
-			jsonKey.put("privateKeyJwk", jsonWebKey.toJSONObject());
+			jsonKey.put("privateKeyJwk", jsonWebKey.toMap());
 			jsonKey.put("publicKeyDIDURL", publicKeyDIDURL);
 			jsonKeys.add(jsonKey);
 
@@ -260,7 +259,7 @@ public class CompletionHandlerBtcr implements CompletionHandler {
 		jsonKey.put("publicKeyHex", publicKeyHex);
 		jsonKey.put("privateKeyHex", privateKeyHex);
 		jsonKey.put("privateKeyWif", privateKeyWif);
-		jsonKey.put("privateKeyJwk", jsonWebKey.toJSONObject());
+		jsonKey.put("privateKeyJwk", jsonWebKey.toMap());
 		jsonKey.put("privateKeyBase58", privateKeyBase58);
 		jsonKey.put("publicKeyDIDURL", publicKeyDIDURL);
 		jsonKeys.add(jsonKey);
@@ -274,7 +273,7 @@ public class CompletionHandlerBtcr implements CompletionHandler {
 		jsonKey2.put("publicKeyHex", publicKeyHex2);
 		jsonKey2.put("privateKeyHex", privateKeyHex2);
 		jsonKey2.put("privateKeyWif", privateKeyWif2);
-		jsonKey2.put("privateKeyJwk", jsonWebKey2.toJSONObject());
+		jsonKey2.put("privateKeyJwk", jsonWebKey2.toMap());
 		jsonKey2.put("privateKeyBase58", privateKeyBase582);
 		jsonKeys2.add(jsonKey2);
 
@@ -343,7 +342,7 @@ public class CompletionHandlerBtcr implements CompletionHandler {
 			jsonKey.put("publicKeyHex", publicKeyHex);
 			jsonKey.put("privateKeyHex", privateKeyHex);
 			jsonKey.put("privateKeyWif", privateKeyWif);
-			jsonKey.put("privateKeyJwk", jsonWebKey.toJSONObject());
+			jsonKey.put("privateKeyJwk", jsonWebKey.toMap());
 			jsonKey.put("publicKeyDIDURL", publicKeyDIDURL);
 			jsonKeys.add(jsonKey);
 
