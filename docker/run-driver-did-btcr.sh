@@ -1,9 +1,6 @@
-#!/bin/sh
+#!/usr/bin/env sh
 
-mkdir -p ${uniregistrar_driver_did_btcr_basePath}
-mkdir -p ${uniregistrar_driver_did_btcr_walletPathMainnet}
-mkdir -p ${uniregistrar_driver_did_btcr_walletPathTestnet}
-mkdir -p ${uniregistrar_driver_did_btcr_walletPathRegtestnet}
+chown -R jetty /opt/wallets
+chown -R jetty /opt/btcr-continuation
 
-cd /opt/driver-did-btcr/
-mvn jetty:run -P war -Dorg.eclipse.jetty.annotations.maxWait=240
+runuser -u jetty -- java -Djetty.http.port=9080 -jar /usr/local/jetty/start.jar
