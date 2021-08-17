@@ -31,6 +31,9 @@ jobs:
             ci/data/gh-workflows/maven-danubetech-nexus password | MAVEN_PASSWORD ;
             ci/data/gh-workflows/deployment-status slack-webhook-url | SLACK_WEBHOOK_URL
 
+      - name: Verify pom.xml
+        run: mvn verify -P ci
+
       - name: Set SHORT_SHA env variable
         id: short_sha
         run: echo "::set-output name=SHORT_SHA::$(git rev-parse --short HEAD)"
