@@ -209,7 +209,7 @@ public class BitcoinJWalletAppKit extends AbstractBitcoinConnection implements B
 		return tx;
 	}
 
-	public boolean completeAndSendTransaction(Transaction tx) throws InsufficientMoneyException {
+	public TransactionBroadcast completeAndSendTransaction(Transaction tx) throws InsufficientMoneyException {
 		Context.propagate(driver.getContext(chain));
 		log.debug("TX send request is received for: {}", tx::getTxId);
 
@@ -221,12 +221,16 @@ public class BitcoinJWalletAppKit extends AbstractBitcoinConnection implements B
 		log.debug("Wallet balance is {}", () -> kit.wallet().getBalance().toFriendlyString());
 		kit.wallet().completeTx(sr); // Funds the transaction from our UTXO set
 		boolean verified = kit.wallet().maybeCommitTx(sr.tx); // Mark related UTXOs as spent
+
+		TransactionBroadcast tb = null;
 		if (verified) {
-			kit.peerGroup().broadcastTransaction(sr.tx);
 			log.info("Wallet TX is announced: {}", tx::getTxId);
+			tb = kit.peerGroup().broadcastTransaction(sr.tx);
+		} else {
+			log.error("Cannot finalize the TX");
 		}
 
-		return verified;
+		return tb;
 	}
 
 	public SendRequest signUtxoWalletTxThenSend(Transaction tx) throws TransactionException {
