@@ -14,7 +14,7 @@ import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -25,7 +25,7 @@ import java.util.concurrent.TimeUnit;
 public class UTXOProducer {
 
 	private final Logger log = LogManager.getLogger(UTXOProducer.class);
-	private final ScheduledExecutorService executor;
+	private final ExecutorService executor;
 	private final int targetUtxoUpkeep;
 	private final Coin targetUtxoValue;
 	private final NetworkParameters params;
@@ -47,7 +47,7 @@ public class UTXOProducer {
 		this.params = BitcoinUtils.chainToNetworkParameters(chain);
 		this.targetUtxoUpkeep = targetUtxoUpkeep == null ? DriverConstants.TARGET_UTXO_UPKEEP : targetUtxoUpkeep;
 		this.targetUtxoValue = targetUtxoValue == null ? DriverConstants.TARGET_UTXO_VALUE : targetUtxoValue;
-		this.executor = ExecutorProvider.getSingleThreadScheduledExecutor(this.getClass().getSimpleName());
+		this.executor = ExecutorProvider.getSingleThreadExecutor(this.getClass().getSimpleName());
 	}
 
 	private long checkSuitableUtxos() {
@@ -64,7 +64,6 @@ public class UTXOProducer {
 				TimeUnit.SECONDS.sleep(1);
 			} catch (InterruptedException e) {
 				log.error(e);
-				stop();
 			}
 		}
 
@@ -75,12 +74,12 @@ public class UTXOProducer {
 			log.debug("Received new transaction: {}", tx::getTxId);
 			log.debug("New balance is: {}", newBalance::toPlainString);
 		});
+
 		executor.execute(() -> {
 			try {
 				splitUtxos();
 			} catch (InterruptedException e) {
 				log.error(e.getMessage());
-				stop();
 			}
 		});
 	}
@@ -120,7 +119,7 @@ public class UTXOProducer {
 
 				currentVal = currentVal.subtract(targetUtxoValue);
 			}
-			if(tx.getOutputs().isEmpty()){
+			if (tx.getOutputs().isEmpty()) {
 				log.debug("Nothing to split, skipping..");
 				continue;
 			}
@@ -132,18 +131,20 @@ public class UTXOProducer {
 					continue;
 				}
 				Transaction bTx = sent.future().get();
-				TransactionConfidence.ConfidenceType confidenceType = null;
+				TransactionConfidence.ConfidenceType confidenceType;
 				log.debug("TX confidence: {}", bTx::getConfidence);
-				while ((confidenceType = bTx.getConfidence().getConfidenceType()) != TransactionConfidence.ConfidenceType.BUILDING) {
+				while ((confidenceType = bTx.getConfidence().getConfidenceType()) != TransactionConfidence.ConfidenceType.BUILDING && driver.isOnline()) {
 					if (confidenceType != TransactionConfidence.ConfidenceType.PENDING) {
 						log.error("Transaction broadcasting error: {}", bTx::getTxId);
 						keys.forEach(utxoWallet::removeKey);
 						continue;
 					}
+					log.trace("TX confidence: {}", bTx::getConfidence);
 					TimeUnit.SECONDS.sleep(5);
 				}
 				log.debug("TX confidence: {}", bTx::getConfidence);
-			} catch (InsufficientMoneyException | ExecutionException  e) {
+
+			} catch (InsufficientMoneyException | ExecutionException e) {
 				log.error(e.getMessage());
 				keys.forEach(utxoWallet::removeKey);
 			}
@@ -153,6 +154,8 @@ public class UTXOProducer {
 
 	public void stop() {
 		log.info("UTXO Producer is stopping...");
-		executor.shutdown();
+		if (executor != null && !executor.isShutdown()) {
+			executor.shutdown();
+		}
 	}
 }
