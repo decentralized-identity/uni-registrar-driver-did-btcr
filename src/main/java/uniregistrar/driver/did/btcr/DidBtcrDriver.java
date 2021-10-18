@@ -15,6 +15,7 @@ import org.apache.logging.log4j.Logger;
 import org.bitcoinj.core.Coin;
 import org.bitcoinj.core.Context;
 import org.bitcoinj.core.ECKey;
+import org.bitcoinj.core.Transaction;
 import org.bitcoinj.params.MainNetParams;
 import org.bitcoinj.params.RegTestParams;
 import org.bitcoinj.params.TestNet3Params;
@@ -162,7 +163,7 @@ public class DidBtcrDriver implements Driver {
 					rpcClientMainNet.getBitcoindRpcClient().setSslSocketFactory(
 							NetworkUtils.getSslSocketFactory(ParsingUtils.getCertificateString(mainnetCert)));
 				}
-				contextMainnet = new Context(MainNetParams.get());
+				contextMainnet = new Context(MainNetParams.get(),10, DriverConstants.DEFAULT_TX_FEE_KB,false);
 			} catch (MalformedURLException e) {
 				throw new ConfigurationException(e);
 			}
@@ -175,7 +176,7 @@ public class DidBtcrDriver implements Driver {
 					rpcClientTestNet.getBitcoindRpcClient().setSslSocketFactory(
 							NetworkUtils.getSslSocketFactory(ParsingUtils.getCertificateString(testnetCert)));
 				}
-				contextTestnet = new Context(TestNet3Params.get());
+				contextTestnet = new Context(TestNet3Params.get(),10, DriverConstants.DEFAULT_TX_FEE_KB,false);
 			} catch (MalformedURLException e) {
 				throw new ConfigurationException(e);
 			}
@@ -183,7 +184,7 @@ public class DidBtcrDriver implements Driver {
 		if (regtest) {
 			try {
 				rpcClientRegtest = NetworkUtils.getBitcoindRpcClient(configs, Chain.REGTESTNET);
-				contextRegtest = new Context(RegTestParams.get());
+				contextRegtest = new Context(RegTestParams.get(),10, DriverConstants.DEFAULT_TX_FEE_KB,false);
 			} catch (MalformedURLException e) {
 				throw new ConfigurationException(e);
 			}

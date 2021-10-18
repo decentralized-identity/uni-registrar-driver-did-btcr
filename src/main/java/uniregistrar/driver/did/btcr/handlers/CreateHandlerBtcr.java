@@ -12,6 +12,7 @@ import uniregistrar.RegistrationException;
 import uniregistrar.driver.did.btcr.DidBtcrDriver;
 import uniregistrar.driver.did.btcr.DidBtcrJob;
 import uniregistrar.driver.did.btcr.DriverConfigs;
+import uniregistrar.driver.did.btcr.DriverConstants;
 import uniregistrar.driver.did.btcr.enums.FundingType;
 import uniregistrar.driver.did.btcr.enums.JobType;
 import uniregistrar.driver.did.btcr.funding.BtcrFund;
@@ -184,7 +185,7 @@ public class CreateHandlerBtcr implements CreateHandler {
 																		configs.getPrefScriptType());
 		opFund.setChangeAddress(changeAddress);
 		final Script outputScript = ScriptBuilder.createOutputScript(changeAddress);
-		tx.addOutput(opFund.getAmount().subtract(Transaction.REFERENCE_DEFAULT_MIN_TX_FEE), outputScript);
+		tx.addOutput(opFund.getAmount().subtract(DriverConstants.DEFAULT_TX_FEE), outputScript);
 
 		log.debug("Script output address is: {}", () -> changeAddress);
 

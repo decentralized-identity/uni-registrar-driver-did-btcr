@@ -94,7 +94,7 @@ public class UTXOProducer {
 		Context.propagate(driver.getContext(chain));
 
 		while (driver.isOnline()) {
-			sleep(CHECK_INTERVAL);
+			sleep(CHECK_INTERVAL); // Even for the initial check better to wait for BitcoinJ to sort itself out
 			if (checkSuitableUtxos() >= targetUtxoUpkeep) {
 				continue;
 			}

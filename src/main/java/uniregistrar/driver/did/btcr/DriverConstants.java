@@ -39,7 +39,9 @@ public final class DriverConstants {
 	public static final int SHUTDOWN_WAITING_TIME = 3;
 	public static final BitcoinClientID BITCOIN_CLIENT = BitcoinClientID.BITCOIND;
 	public static final long DEFAULT_FUNDING_WAIT_TIME = 24; // In hours
-	public static final Coin DEFAULT_TX_FEE = Transaction.DEFAULT_TX_FEE;
+	public static final Coin DEFAULT_TX_FEE_KB = Transaction.DEFAULT_TX_FEE.div(50);
+
+	public static final Coin DEFAULT_TX_FEE = Transaction.REFERENCE_DEFAULT_MIN_TX_FEE.multiply(5); // Pay 5 times more than the min fee
 	public static final Long MAX_TRACK_SECONDS = 36000L;
 	public static final Chain DEFAULT_CHAIN = Chain.TESTNET;
 

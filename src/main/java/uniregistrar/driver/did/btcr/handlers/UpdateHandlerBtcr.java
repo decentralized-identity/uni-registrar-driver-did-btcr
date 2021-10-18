@@ -27,6 +27,7 @@ import uniregistrar.RegistrationException;
 import uniregistrar.driver.did.btcr.DidBtcrDriver;
 import uniregistrar.driver.did.btcr.DidBtcrJob;
 import uniregistrar.driver.did.btcr.DriverConfigs;
+import uniregistrar.driver.did.btcr.DriverConstants;
 import uniregistrar.driver.did.btcr.enums.JobType;
 import uniregistrar.driver.did.btcr.funding.BtcrFund;
 import uniregistrar.driver.did.btcr.funding.FundingException;
@@ -160,7 +161,7 @@ public class UpdateHandlerBtcr implements UpdateHandler {
 		Address changeAddr = BitcoinUtils.getAddrStringFromKey(chain, opFund.getChangeKey(),
 				toCheck.getOutputScriptType());
 
-		updateTx.addOutput(value.subtract(Transaction.REFERENCE_DEFAULT_MIN_TX_FEE), changeAddr);
+		updateTx.addOutput(value.subtract(DriverConstants.DEFAULT_TX_FEE_KB), changeAddr);
 
 		updateTx.addSignedInput(opFund.getTransactionOutput(), opFund.getFundingKey(), Transaction.SigHash.ALL, false);
 

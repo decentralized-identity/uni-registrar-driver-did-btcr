@@ -1,19 +1,18 @@
 package uniregistrar.driver.did.btcr.util.validators;
 
-import java.nio.file.Files;
-import java.nio.file.Paths;
-
+import info.weboftrust.btctxlookup.Chain;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.bitcoinj.core.Transaction;
 import org.bitcoinj.script.Script;
-
-import info.weboftrust.btctxlookup.Chain;
 import uniregistrar.driver.did.btcr.DidBtcrDriver;
 import uniregistrar.driver.did.btcr.DriverConfigs;
+import uniregistrar.driver.did.btcr.DriverConstants;
 import wf.bitcoin.javabitcoindrpcclient.BitcoinJSONRPCClient;
 import wf.bitcoin.javabitcoindrpcclient.BitcoindRpcClient;
 import wf.bitcoin.javabitcoindrpcclient.GenericRpcException;
+
+import java.nio.file.Files;
+import java.nio.file.Paths;
 
 public class ConfigurationValidator {
 	private static final Logger log = LogManager.getLogger(ConfigurationValidator.class);
@@ -34,7 +33,7 @@ public class ConfigurationValidator {
 			throw new ConfigurationException("Required depth cannot be < 1");
 		}
 
-		if (configs.getTargetFundAmount() * 2 <= Transaction.DEFAULT_TX_FEE.getValue()) {
+		if (configs.getTargetFundAmount() <= DriverConstants.DEFAULT_TX_FEE.getValue()) {
 			throw new ConfigurationException("Target fund amount is too small!");
 		}
 
