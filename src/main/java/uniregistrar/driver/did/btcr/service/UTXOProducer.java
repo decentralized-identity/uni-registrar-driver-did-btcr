@@ -64,6 +64,7 @@ public class UTXOProducer {
 				TimeUnit.SECONDS.sleep(1);
 			} catch (InterruptedException e) {
 				log.error(e);
+				Thread.currentThread().interrupt();
 			}
 		}
 
@@ -79,7 +80,7 @@ public class UTXOProducer {
 			try {
 				splitUtxos();
 			} catch (InterruptedException e) {
-				log.error(e.getMessage());
+				Thread.currentThread().interrupt();
 			}
 		});
 	}
@@ -130,19 +131,21 @@ public class UTXOProducer {
 					log.debug("Cannot send the TX, skipping..");
 					continue;
 				}
-				Transaction bTx = sent.future().get();
-				TransactionConfidence.ConfidenceType confidenceType;
-				log.debug("TX confidence: {}", bTx::getConfidence);
-				while ((confidenceType = bTx.getConfidence().getConfidenceType()) != TransactionConfidence.ConfidenceType.BUILDING && driver.isOnline()) {
-					if (confidenceType != TransactionConfidence.ConfidenceType.PENDING) {
-						log.error("Transaction broadcasting error: {}", bTx::getTxId);
-						keys.forEach(utxoWallet::removeKey);
-						continue;
+				if (chain != Chain.REGTESTNET) {
+					Transaction bTx = sent.future().get();
+					TransactionConfidence.ConfidenceType confidenceType;
+					log.debug("TX confidence: {}", bTx::getConfidence);
+					while ((confidenceType = bTx.getConfidence().getConfidenceType()) != TransactionConfidence.ConfidenceType.BUILDING && driver.isOnline()) {
+						if (confidenceType != TransactionConfidence.ConfidenceType.PENDING) {
+							log.error("Transaction broadcasting error: {}", bTx::getTxId);
+							keys.forEach(utxoWallet::removeKey);
+							continue;
+						}
+						log.trace("TX confidence: {}", bTx::getConfidence);
+						TimeUnit.SECONDS.sleep(5);
 					}
-					log.trace("TX confidence: {}", bTx::getConfidence);
-					TimeUnit.SECONDS.sleep(5);
+					log.debug("TX confidence: {}", bTx::getConfidence);
 				}
-				log.debug("TX confidence: {}", bTx::getConfidence);
 
 			} catch (InsufficientMoneyException | ExecutionException e) {
 				log.error(e.getMessage());
