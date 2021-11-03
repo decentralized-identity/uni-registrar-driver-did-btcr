@@ -40,8 +40,8 @@ import java.util.concurrent.TimeUnit;
  */
 public class BitcoinJWalletAppKit extends AbstractBitcoinConnection implements BitcoinConnection {
 	private static final Logger log = LogManager.getLogger(BitcoinJWalletAppKit.class);
-	private final static String DEFAULT_FILE_NAME = "bitcoinj_";
-	private final static String DEFAULT_PREFIX = "W";
+	private static final String DEFAULT_FILE_NAME = "bitcoinj_";
+	private static final String DEFAULT_PREFIX = "W";
 	private static final BitcoinClientID CLIENT_ID = BitcoinClientID.BITCOINJ;
 	private final NetworkParameters params;
 	private final Chain chain;
@@ -306,8 +306,10 @@ public class BitcoinJWalletAppKit extends AbstractBitcoinConnection implements B
 	public void stop() {
 		log.info("WalletService is closing...");
 		online = false;
-		kit.stopAsync();
-		kit.awaitTerminated();
+		if(kit.isRunning()) {
+			kit.stopAsync();
+			kit.awaitTerminated();
+		}
 		log.info("Wallet service is terminated!");
 	}
 }

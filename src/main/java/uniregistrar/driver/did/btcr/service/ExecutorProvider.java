@@ -104,12 +104,12 @@ public final class ExecutorProvider {
 	public static void shutDown(int waitSec) {
 		log.info("Shutting down the Executor Provider...");
 
-		executors.values().forEach((e) -> {
+		executors.values().forEach(e -> {
 			log.trace("Shutting down executor: {}", e::toString);
 			e.shutdown();
 		});
 
-		scheduledExecutors.values().forEach((e) -> {
+		scheduledExecutors.values().forEach(e -> {
 			log.trace("Shutting down scheduled executor: {}", e::toString);
 			e.shutdown();
 		});
@@ -119,6 +119,7 @@ public final class ExecutorProvider {
 			TimeUnit.SECONDS.sleep(waitSec);
 		} catch (InterruptedException e) {
 			log.error("Interrupted during shut down process with exception {}", e.getMessage());
+			Thread.currentThread().interrupt();
 		}
 
 		executors.forEach((t, e) -> {

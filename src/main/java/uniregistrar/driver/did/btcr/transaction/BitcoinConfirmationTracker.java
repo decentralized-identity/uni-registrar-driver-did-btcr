@@ -30,7 +30,6 @@ public class BitcoinConfirmationTracker {
 	private static final int INITIAL_DELAY = 30;
 	// <TXHash,JobID>
 	private final Map<String, String> confirmationWaiters;
-	// private final Map<String, Integer> countTrials;
 	private final Map<String, Long> trackTime;
 	private final DidBtcrDriver driver;
 	private final BitcoindRPCBitcoinConnection bitcoinClient;
@@ -84,7 +83,8 @@ public class BitcoinConfirmationTracker {
 		try {
 			TimeUnit.SECONDS.sleep(2);
 		} catch (InterruptedException e) {
-			log.error(e.getMessage(), e);
+			log.error("InterruptedException: ", e);
+			Thread.currentThread().interrupt();
 		}
 
 		for (Map.Entry<String, CompletableFuture<Boolean>> entry : confStates.entrySet()) {
@@ -92,7 +92,10 @@ public class BitcoinConfirmationTracker {
 			try {
 				confirmed = entry.getValue().get(1, TimeUnit.SECONDS);
 			} catch (InterruptedException | ExecutionException | TimeoutException e) {
-				log.error(e.getMessage(), e);
+				log.error("InterruptedException: ", e);
+				if(e instanceof InterruptedException){
+					Thread.currentThread().interrupt();
+				}
 			}
 			String txid = entry.getKey();
 			if (confirmed) {

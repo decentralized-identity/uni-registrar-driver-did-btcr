@@ -15,7 +15,6 @@ import org.apache.logging.log4j.Logger;
 import org.bitcoinj.core.Coin;
 import org.bitcoinj.core.Context;
 import org.bitcoinj.core.ECKey;
-import org.bitcoinj.core.Transaction;
 import org.bitcoinj.params.MainNetParams;
 import org.bitcoinj.params.RegTestParams;
 import org.bitcoinj.params.TestNet3Params;
@@ -46,8 +45,15 @@ import uniregistrar.state.DeactivateState;
 import uniregistrar.state.UpdateState;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.MalformedURLException;
+import java.nio.channels.FileChannel;
+import java.nio.channels.FileLock;
+import java.nio.channels.OverlappingFileLockException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -88,16 +94,16 @@ public class DidBtcrDriver implements Driver {
 	private UTXOProducer utxoProducerTestnet;
 	private UTXOProducer utxoProducerMainnet;
 
-	private volatile Wallet utxoWalletMainnet;
-	private volatile Wallet utxoWalletTestnet;
-	private volatile Wallet utxoWalletRegtestnet;
+	private Wallet utxoWalletMainnet;
+	private Wallet utxoWalletTestnet;
+	private Wallet utxoWalletRegtestnet;
 
 	private File utxoWalletMainnetFile;
 	private File utxoWalletTestnetFile;
 	private File utxoWalletRegtestnetFile;
-	private volatile Context contextMainnet;
-	private volatile Context contextTestnet;
-	private volatile Context contextRegtest;
+	private Context contextMainnet;
+	private Context contextTestnet;
+	private Context contextRegtest;
 
 	private BitcoinConfirmationTracker confirmationTrackerRegtest;
 	private BitcoinConfirmationTracker confirmationTrackerTestnet;
@@ -113,7 +119,7 @@ public class DidBtcrDriver implements Driver {
 		Thread.currentThread().setName("DidBtcrDriver-MainThread");
 		Preconditions.checkNotNull(props, "Driver properties cannot be null!");
 		log.debug("Creating new uniregistrar.driver.did.btcr.DidBtcrDriver with given properties {}",
-				  () -> StringUtils.join(props));
+				() -> StringUtils.join(props));
 		try {
 			configs = Configurator.getDriverProps(props);
 		} catch (ConfigurationException e) {
@@ -126,7 +132,7 @@ public class DidBtcrDriver implements Driver {
 		completionQueue = new LinkedBlockingDeque<>();
 		unconfirmedJobs = new ConcurrentHashMap<>();
 		fundingRequiredJobs = new PassiveExpiringMap<>(DriverConstants.DEFAULT_FUNDING_WAIT_TIME, TimeUnit.HOURS,
-													   new ConcurrentHashMap<>());
+				new ConcurrentHashMap<>());
 
 		try {
 			initDriver();
@@ -163,7 +169,7 @@ public class DidBtcrDriver implements Driver {
 					rpcClientMainNet.getBitcoindRpcClient().setSslSocketFactory(
 							NetworkUtils.getSslSocketFactory(ParsingUtils.getCertificateString(mainnetCert)));
 				}
-				contextMainnet = new Context(MainNetParams.get(),10, DriverConstants.DEFAULT_TX_FEE_KB,false);
+				contextMainnet = new Context(MainNetParams.get(), 10, DriverConstants.DEFAULT_TX_FEE_KB, false);
 			} catch (MalformedURLException e) {
 				throw new ConfigurationException(e);
 			}
@@ -176,7 +182,7 @@ public class DidBtcrDriver implements Driver {
 					rpcClientTestNet.getBitcoindRpcClient().setSslSocketFactory(
 							NetworkUtils.getSslSocketFactory(ParsingUtils.getCertificateString(testnetCert)));
 				}
-				contextTestnet = new Context(TestNet3Params.get(),10, DriverConstants.DEFAULT_TX_FEE_KB,false);
+				contextTestnet = new Context(TestNet3Params.get(), 10, DriverConstants.DEFAULT_TX_FEE_KB, false);
 			} catch (MalformedURLException e) {
 				throw new ConfigurationException(e);
 			}
@@ -184,7 +190,7 @@ public class DidBtcrDriver implements Driver {
 		if (regtest) {
 			try {
 				rpcClientRegtest = NetworkUtils.getBitcoindRpcClient(configs, Chain.REGTESTNET);
-				contextRegtest = new Context(RegTestParams.get(),10, DriverConstants.DEFAULT_TX_FEE_KB,false);
+				contextRegtest = new Context(RegTestParams.get(), 10, DriverConstants.DEFAULT_TX_FEE_KB, false);
 			} catch (MalformedURLException e) {
 				throw new ConfigurationException(e);
 			}
@@ -192,18 +198,18 @@ public class DidBtcrDriver implements Driver {
 
 		log.debug("Open wallet services...");
 
-		CompletableFuture<Void> openMainnet = null;
-		CompletableFuture<Void> openTestnet = null;
-		CompletableFuture<Void> openRegtest = null;
+		CompletableFuture<Boolean> openMainnet = null;
+		CompletableFuture<Boolean> openTestnet = null;
+		CompletableFuture<Boolean> openRegtest = null;
 
 		if (mainnet) {
-			openMainnet = CompletableFuture.runAsync(() -> openWalletService(Chain.MAINNET));
+			openMainnet = CompletableFuture.supplyAsync(() -> openWalletService(Chain.MAINNET));
 		}
 		if (testnet) {
-			openTestnet = CompletableFuture.runAsync(() -> openWalletService(Chain.TESTNET));
+			openTestnet = CompletableFuture.supplyAsync(() -> openWalletService(Chain.TESTNET));
 		}
 		if (regtest) {
-			openRegtest = CompletableFuture.runAsync(() -> openWalletService(Chain.REGTESTNET));
+			openRegtest = CompletableFuture.supplyAsync(() -> openWalletService(Chain.REGTESTNET));
 		}
 		log.info("Setting driver state to online...");
 
@@ -212,17 +218,18 @@ public class DidBtcrDriver implements Driver {
 				try {
 					TimeUnit.SECONDS.sleep(1);
 				} catch (InterruptedException e) {
-					throw new ConfigurationException(e.getMessage());
+					Thread.currentThread().interrupt();
+					throw new ConfigurationException("ConfigurationException: ", e);
 				}
 			}
 
-			if (openMainnet.isCompletedExceptionally()) {
+			if (openMainnet.isCompletedExceptionally() || !(openMainnet.getNow(false))) {
 				throw new ConfigurationException("Cannot start the mainnet walletAppKit!");
 
 			}
 
 			confirmationTrackerMainnet = new BitcoinConfirmationTracker(this, Chain.MAINNET, configs.getRequiredDepth(),
-																		rpcClientMainNet);
+					rpcClientMainNet);
 			if (configs.getMainnetCheckInterval() > 0) {
 				confirmationTrackerMainnet.start(configs.getMainnetCheckInterval());
 			}
@@ -234,16 +241,17 @@ public class DidBtcrDriver implements Driver {
 				try {
 					TimeUnit.SECONDS.sleep(1);
 				} catch (InterruptedException e) {
+					Thread.currentThread().interrupt();
 					throw new ConfigurationException(e.getMessage());
 				}
 			}
 
-			if (openTestnet.isCompletedExceptionally()) {
+			if (openTestnet.isCompletedExceptionally() || !(openTestnet.getNow(false))) {
 				throw new ConfigurationException("Cannot start the testnet walletAppKit!");
 			}
 
 			confirmationTrackerTestnet = new BitcoinConfirmationTracker(this, Chain.TESTNET, configs.getRequiredDepth(),
-																		rpcClientTestNet);
+					rpcClientTestNet);
 			if (configs.getTestnetCheckInterval() > 0) {
 				confirmationTrackerTestnet.start(configs.getTestnetCheckInterval());
 			}
@@ -256,16 +264,17 @@ public class DidBtcrDriver implements Driver {
 					TimeUnit.SECONDS.sleep(1);
 				} catch (InterruptedException e) {
 					Objects.requireNonNull(openTestnet).cancel(true);
+					Thread.currentThread().interrupt();
 					throw new ConfigurationException(e.getMessage());
 				}
 			}
 
-			if (openRegtest.isCompletedExceptionally()) {
+			if (openRegtest.isCompletedExceptionally() || !(openRegtest.getNow(false))) {
 				throw new ConfigurationException("Cannot start the regtest walletAppKit!");
 			}
 
 			confirmationTrackerRegtest = new BitcoinConfirmationTracker(this, Chain.REGTESTNET,
-																		configs.getRequiredDepth(), rpcClientRegtest);
+					configs.getRequiredDepth(), rpcClientRegtest);
 			if (configs.getRegtestCheckInterval() > 0) {
 				confirmationTrackerRegtest.start(configs.getRegtestCheckInterval());
 			}
@@ -290,7 +299,7 @@ public class DidBtcrDriver implements Driver {
 				throw new ConfigurationException(e);
 			}
 			utxoProducerMainnet = new UTXOProducer(this, Chain.MAINNET, walletServiceMainnet.getWallet(),
-												   configs.getUtxoUpkeepTarget(Chain.MAINNET), Coin.valueOf(configs.getTargetFundAmount()));
+					configs.getUtxoUpkeepTarget(Chain.MAINNET), Coin.valueOf(configs.getTargetFundAmount()));
 			utxoProducerMainnet.start();
 		}
 
@@ -303,7 +312,7 @@ public class DidBtcrDriver implements Driver {
 				throw new ConfigurationException(e);
 			}
 			utxoProducerTestnet = new UTXOProducer(this, Chain.TESTNET, walletServiceTestnet.getWallet(),
-												   configs.getUtxoUpkeepTarget(Chain.TESTNET), Coin.valueOf(configs.getTargetFundAmount()));
+					configs.getUtxoUpkeepTarget(Chain.TESTNET), Coin.valueOf(configs.getTargetFundAmount()));
 			utxoProducerTestnet.start();
 		}
 
@@ -316,7 +325,7 @@ public class DidBtcrDriver implements Driver {
 				throw new ConfigurationException(e);
 			}
 			utxoProducerRegtest = new UTXOProducer(this, Chain.REGTESTNET, walletServiceRegtest.getWallet(),
-												   configs.getUtxoUpkeepTarget(Chain.REGTESTNET), Coin.valueOf(configs.getTargetFundAmount()));
+					configs.getUtxoUpkeepTarget(Chain.REGTESTNET), Coin.valueOf(configs.getTargetFundAmount()));
 			utxoProducerRegtest.start();
 		}
 
@@ -330,11 +339,7 @@ public class DidBtcrDriver implements Driver {
 
 		online = false;
 
-		// Remove confirmation waiting keys to mitigate broken states
-
 		log.info("There are {} waiting jobs!", unconfirmedJobs::size);
-
-//		unconfirmedJobs.values().stream().parallel().forEach(j -> removeUtxoKey(j.getPrivateKey(), j.getChain()));
 
 		if (completionHandler != null) {
 			completionHandler.stop();
@@ -396,31 +401,81 @@ public class DidBtcrDriver implements Driver {
 		try {
 			TimeUnit.SECONDS.sleep(DriverConstants.SHUTDOWN_WAITING_TIME);
 		} catch (InterruptedException e) {
-			log.error(e.getMessage());
+			log.error("InterruptedException: ", e);
+			Thread.currentThread().interrupt();
 		}
 	}
 
-	private void openWalletService(Chain chain) {
+	private boolean canLockFile(String filePath, int waitSec) {
+		for (int i = 1; i <= waitSec; i++) {
+			try (FileOutputStream fileOutputStream = new FileOutputStream(filePath, true);
+			     FileChannel channel = fileOutputStream.getChannel()) {
+
+				FileLock lock = channel.tryLock();
+				lock.release();
+				return true;
+
+			} catch (OverlappingFileLockException e) {
+				log.warn("File '{}' is already locked!", filePath);
+				log.debug("Lock attempt number: {}, remaining attempts: {}, rate: 1 attempt per second.", i, waitSec - i);
+				try {
+					TimeUnit.SECONDS.sleep(1);
+				} catch (InterruptedException ie) {
+					log.error("Interrupted: ", ie);
+					Thread.currentThread().interrupt();
+				}
+
+			} catch (IOException e) {
+				log.error("IOException: ", e);
+			}
+		}
+
+		return false;
+	}
+
+	private boolean openWalletService(Chain chain) {
 		Preconditions.checkNotNull(chain, "Chain cannot be null!");
 		log.info("Opening wallet for the chain {} ...", chain);
+
+		String walletPath = configs.getWalletPath(chain);
+		String walletPrefix = configs.getWalletPrefix(chain);
+		Path fullPathWallet = Paths.get(walletPath, walletPrefix + ".wallet");
+		Path fullPathChain = Paths.get(walletPath, walletPrefix + ".spvchain");
+
+		if(Files.exists(fullPathWallet)) {
+			boolean wLock = canLockFile(fullPathWallet.toString(), 10);
+			if (!wLock) {
+				log.error("Lock for the wallet file of {} cannot acquired!", chain);
+				return false;
+			}
+		}
+
+		if(Files.exists(fullPathChain)) {
+			boolean cLock = canLockFile(fullPathChain.toString(), 10);
+			if (!cLock) {
+				log.error("Lock for the chain file of {} cannot acquired!", chain);
+				return false;
+			}
+		}
 		switch (chain) {
 			case MAINNET: {
-				walletServiceMainnet = new BitcoinJWalletAppKit(this, chain, configs.getWalletPath(chain),
-																configs.getWalletPrefix(chain), configs.getWalletKey(chain));
+
+				walletServiceMainnet = new BitcoinJWalletAppKit(this, chain, walletPath,
+						walletPrefix, configs.getWalletKey(chain));
 				walletServiceMainnet.setPeers(configs.getMainnetPeers());
 				walletServiceMainnet.start();
 				break;
 			}
 			case TESTNET: {
-				walletServiceTestnet = new BitcoinJWalletAppKit(this, chain, configs.getWalletPath(chain),
-																configs.getWalletPrefix(chain), configs.getWalletKey(chain));
+				walletServiceTestnet = new BitcoinJWalletAppKit(this, chain, walletPath,
+						walletPrefix, configs.getWalletKey(chain));
 				walletServiceTestnet.setPeers(configs.getTestnetPeers());
 				walletServiceTestnet.start();
 				break;
 			}
 			case REGTESTNET: {
-				walletServiceRegtest = new BitcoinJWalletAppKit(this, chain, configs.getWalletPath(chain),
-																configs.getWalletPrefix(chain), configs.getWalletKey(chain));
+				walletServiceRegtest = new BitcoinJWalletAppKit(this, chain, walletPath,
+						walletPrefix, configs.getWalletKey(chain));
 				walletServiceRegtest.setPeers(configs.getRegtestPeers());
 				walletServiceRegtest.start();
 				break;
@@ -428,6 +483,7 @@ public class DidBtcrDriver implements Driver {
 			default:
 				throw new IllegalArgumentException("No such a chain!");
 		}
+		return true;
 	}
 
 	public DidBtcrDriver(Map<String, Object> properties) {
@@ -455,8 +511,7 @@ public class DidBtcrDriver implements Driver {
 
 		if (removed) {
 			log.debug("Key with public-key hex {} is removed from the Wallet", key::getPublicKeyAsHex);
-		}
-		else {
+		} else {
 			log.error("Failed to remove the key with public-key hex {} from the Wallet", key::getPublicKeyAsHex);
 		}
 	}
@@ -488,7 +543,7 @@ public class DidBtcrDriver implements Driver {
 		final Map<String, Object> options = createRequest.getOptions();
 
 		final Chain chain = options == null || !options.containsKey("chain") ? Chain.TESTNET
-																			 : Chain.fromString((String) createRequest.getOptions().get("chain"));
+				: Chain.fromString((String) createRequest.getOptions().get("chain"));
 
 		// Check if job is in progress
 		if (jobId != null && !jobId.isEmpty()) {
@@ -502,10 +557,9 @@ public class DidBtcrDriver implements Driver {
 							() -> retState);
 					createStates.remove(jobId);
 					return retState;
-				}
-				else if (createStates.get(jobId).getDidState().get("state").equals("failed")) {
+				} else if (createStates.get(jobId).getDidState().get("state").equals("failed")) {
 					log.debug("Requested job is failed. Removing it from the create states, returning its state: {}",
-							  () -> retState);
+							() -> retState);
 					createStates.remove(jobId);
 					return retState;
 				}
@@ -527,19 +581,20 @@ public class DidBtcrDriver implements Driver {
 						completeJob.get(1, TimeUnit.SECONDS);
 					} catch (InterruptedException | TimeoutException | ExecutionException e) {
 						log.error(e.getMessage());
+						if (e instanceof InterruptedException) {
+							Thread.currentThread().interrupt();
+						}
 						return createStates.get(jobId);
 					}
 					if (createStates.get(jobId).getDidState().get("state").equals("finished")) {
 						log.debug("Job {} is completed with on-demand confirmation check triggering.", () -> jobId);
 						return createStates.remove(jobId);
 					}
-				}
-				else {
+				} else {
 					log.debug("Requested job is still in progress. Returning its current state: {}", () -> retState);
 					return retState;
 				}
-			}
-			else if (fundingRequiredJobs.containsKey(jobId)) {
+			} else if (fundingRequiredJobs.containsKey(jobId)) {
 				log.debug("{} is in expected funds", () -> jobId);
 				FundingService fundingService = getFundingService(chain);
 				DidBtcrJob job = fundingRequiredJobs.get(jobId);
@@ -551,8 +606,7 @@ public class DidBtcrDriver implements Driver {
 					throw new RegistrationException(e.getMessage());
 				}
 
-			}
-			else {
+			} else {
 				throw new RegistrationException("Invalid JobID"); // Note: This will be same for the old jobIDs too
 			}
 		}
@@ -576,6 +630,7 @@ public class DidBtcrDriver implements Driver {
 				TimeUnit.SECONDS.sleep(1);
 			} catch (InterruptedException e) {
 				log.error(e.getMessage());
+				Thread.currentThread().interrupt();
 				throw new RegistrationException("Wallet is not ready, please try another time!");
 			}
 		}
@@ -614,14 +669,12 @@ public class DidBtcrDriver implements Driver {
 							() -> state);
 					updateStates.remove(jobId);
 					return state;
-				}
-				else if (updateStates.get(jobId).getDidState().get("state").equals("failed")) {
+				} else if (updateStates.get(jobId).getDidState().get("state").equals("failed")) {
 					log.debug("Requested job is failed. Removing it from the create states, returning its state: {}",
-							  () -> state);
+							() -> state);
 					updateStates.remove(jobId);
 					return state;
-				}
-				else if (getBitcoinConfirmationTracker(
+				} else if (getBitcoinConfirmationTracker(
 						Chain.fromString((String) state.getMethodMetadata().get("chain")))
 						.checkConfirmationsWithJobID(jobId)) {
 					DidBtcrJob job = unconfirmedJobs.get(jobId);
@@ -637,6 +690,9 @@ public class DidBtcrDriver implements Driver {
 						completeJob.get(1, TimeUnit.SECONDS);
 					} catch (InterruptedException | TimeoutException | ExecutionException e) {
 						log.error(e.getMessage());
+						if (e instanceof InterruptedException) {
+							Thread.currentThread().interrupt();
+						}
 						return updateStates.get(jobId);
 					}
 					log.debug("TX is already confirmed, sending it for the completion!");
@@ -645,14 +701,12 @@ public class DidBtcrDriver implements Driver {
 						log.debug("Job {} is completed with the fallback triggering.", () -> jobId);
 						return updateStates.remove(jobId);
 					}
-				}
-				else {
+				} else {
 					log.debug("Requested Update operation is still in progress. Returning its current state: {}",
-							  () -> state);
+							() -> state);
 					return state;
 				}
-			}
-			else {
+			} else {
 				throw new RegistrationException("Invalid JobID"); // Note: This will be same for the old jobIDs too
 			}
 		}
@@ -665,7 +719,7 @@ public class DidBtcrDriver implements Driver {
 		}
 
 		final Chain chain = updateRequest.getOptions() == null ? Chain.TESTNET
-															   : Chain.fromString((String) updateRequest.getOptions().get("chain"));
+				: Chain.fromString((String) updateRequest.getOptions().get("chain"));
 
 		log.debug("UpdateRequest  will be processed on chain {}", chain);
 
@@ -681,6 +735,7 @@ public class DidBtcrDriver implements Driver {
 				TimeUnit.SECONDS.sleep(1);
 			} catch (InterruptedException e) {
 				log.error(e.getMessage());
+				Thread.currentThread().interrupt();
 				throw new RegistrationException("Wallet is not ready, please try another time!");
 			}
 		}
@@ -709,14 +764,12 @@ public class DidBtcrDriver implements Driver {
 							() -> state);
 					deactivateStates.remove(jobId);
 					return state;
-				}
-				else if (deactivateStates.get(jobId).getDidState().get("state").equals("failed")) {
+				} else if (deactivateStates.get(jobId).getDidState().get("state").equals("failed")) {
 					log.debug("Requested job is failed. Removing it from the create states, returning its state: {}",
-							  () -> state);
+							() -> state);
 					deactivateStates.remove(jobId);
 					return state;
-				}
-				else if (getBitcoinConfirmationTracker(
+				} else if (getBitcoinConfirmationTracker(
 						Chain.fromString((String) state.getMethodMetadata().get("chain")))
 						.checkConfirmationsWithJobID(jobId)) {
 					log.debug("TX is already confirmed, sending it for the completion!");
@@ -733,18 +786,19 @@ public class DidBtcrDriver implements Driver {
 						completeJob.get(1, TimeUnit.SECONDS);
 					} catch (InterruptedException | TimeoutException | ExecutionException e) {
 						log.error(e.getMessage());
+						if (e instanceof InterruptedException) {
+							Thread.currentThread().interrupt();
+						}
 						return deactivateStates.get(jobId);
 					}
 					if (createStates.get(jobId).getDidState().get("state").equals("finished")) {
 						log.debug("Job {} is completed with the fallback triggering.", () -> jobId);
 						return deactivateStates.remove(jobId);
 					}
-				}
-				else {
+				} else {
 					return deactivateStates.get(jobId);
 				}
-			}
-			else {
+			} else {
 				throw new RegistrationException("Invalid JobID"); // Note: This will be same for the old jobIDs too
 			}
 		}
@@ -759,7 +813,7 @@ public class DidBtcrDriver implements Driver {
 		log.debug("New deactivation request is received: {}", () -> deactivateRequest);
 
 		final Chain chain = deactivateRequest.getOptions() == null ? Chain.TESTNET
-																   : Chain.fromString((String) deactivateRequest.getOptions().get("chain"));
+				: Chain.fromString((String) deactivateRequest.getOptions().get("chain"));
 
 		log.debug("Deactivation Request will be processed on chain {}", chain);
 
@@ -775,6 +829,7 @@ public class DidBtcrDriver implements Driver {
 				TimeUnit.SECONDS.sleep(1);
 			} catch (InterruptedException e) {
 				log.error(e.getMessage());
+				Thread.currentThread().interrupt();
 				throw new RegistrationException("Wallet is not ready, please try another time!");
 			}
 		}
@@ -793,7 +848,8 @@ public class DidBtcrDriver implements Driver {
 			final ObjectMapper mapper = new ObjectMapper();
 			mapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
 			mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-			propsToShow = mapper.convertValue(configs, new TypeReference<Map<String, Object>>() {});
+			propsToShow = mapper.convertValue(configs, new TypeReference<Map<String, Object>>() {
+			});
 			propsToShow.put("certificateMainnet", "................................");
 			propsToShow.put("certificateTestnet", "................................");
 			propsToShow.put("rpcUrlMainnet", "................................");
@@ -837,13 +893,11 @@ public class DidBtcrDriver implements Driver {
 			CreateState state = createStates.get(jobId);
 			SetBtcrCreateStateFailed.setStateFail(state, reason, initTime);
 			createStates.put(jobId, state);
-		}
-		else if (jobType == JobType.UPDATE) {
+		} else if (jobType == JobType.UPDATE) {
 			UpdateState state = updateStates.get(jobId);
 			SetBtcrCreateStateFailed.setStateFail(state, reason, initTime);
 			updateStates.put(jobId, state);
-		}
-		else {
+		} else {
 			DeactivateState state = deactivateStates.get(jobId);
 			SetBtcrCreateStateFailed.setStateFail(state, reason, initTime);
 			deactivateStates.put(jobId, state);
