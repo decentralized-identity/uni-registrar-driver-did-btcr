@@ -169,12 +169,13 @@ public class CompletionHandlerBtcr implements CompletionHandler {
 			final String privateKeyBase58 = Base58.encode(privateKey.getPrivKeyBytes());
 
 			final Map<String, Object> jsonKey = new LinkedHashMap<>();
-			jsonKey.put("purpose", new String[]{"update", "deactivate"});
+			jsonKey.put("type",ECKeyUtils.LD_KEY_TYPE);
 			jsonKey.put("privateKeyJwk", jsonWebKey);
 			jsonKey.put("privateKeyBase58", privateKeyBase58);
 			jsonKey.put("privateKeyWif", privateKeyWif);
+			jsonKey.put("purpose", new String[]{"update", "deactivate"});
 
-			secret.put("keys", jsonKey);
+			secret.put("verificationMethod", jsonKey);
 		}
 
 		// Update is finished. Prepare the result.
@@ -249,20 +250,23 @@ public class CompletionHandlerBtcr implements CompletionHandler {
 		jsonWebKey2.values().removeAll(Collections.singleton(null));
 
 		final Map<String, Object> jsonKey = new LinkedHashMap<>();
-		jsonKey.put("purpose", new String[]{"authentication"});
+		jsonKey.put("id", publicKeyDIDURL);
+		jsonKey.put("type",ECKeyUtils.LD_KEY_TYPE);
+		jsonKey.put("controller", did);
 		jsonKey.put("privateKeyJwk", jsonWebKey);
 		jsonKey.put("privateKeyBase58", privateKeyBase58);
 		jsonKey.put("privateKeyWif", privateKeyWif);
-		jsonKey.put("publicKeyDIDURL", publicKeyDIDURL);
+		jsonKey.put("purpose", new String[]{"authentication", "assertionMethod"});
 
 		final Map<String, Object> secret = new LinkedHashMap<>();
 		final Map<String, Object> jsonKey2 = new LinkedHashMap<>();
-		jsonKey2.put("purpose", new String[]{"update", "deactivate"});
+		jsonKey2.put("type",ECKeyUtils.LD_KEY_TYPE);
 		jsonKey2.put("privateKeyJwk", jsonWebKey2);
 		jsonKey2.put("privateKeyBase58", privateKeyBase58_2);
 		jsonKey2.put("privateKeyWif", privateKeyWif2);
+		jsonKey2.put("purpose", new String[]{"update", "deactivate"});
 
-		secret.put("keys", List.of(jsonKey, jsonKey2));
+		secret.put("verificationMethod", List.of(jsonKey, jsonKey2));
 
 		// Registration is finished. Prepare the result.
 		final Map<String, Object> methodMetadata = new LinkedHashMap<>();
@@ -318,10 +322,11 @@ public class CompletionHandlerBtcr implements CompletionHandler {
 			final Map<String, Object> jsonKey = new LinkedHashMap<>();
 
 			jsonWebKey.values().removeAll(Collections.singleton(null));
+			jsonKey.put("type",ECKeyUtils.LD_KEY_TYPE);
 			jsonKey.put("privateKeyJwk", jsonWebKey);
 			jsonKey.put("privateKeyBase58", privateKeyBase58);
 			jsonKey.put("privateKeyWif", privateKeyWif);
-			secret.put("keys", jsonKey);
+			secret.put("verificationMethod", jsonKey);
 		}
 
 		// Update is finished. Prepare the result.
