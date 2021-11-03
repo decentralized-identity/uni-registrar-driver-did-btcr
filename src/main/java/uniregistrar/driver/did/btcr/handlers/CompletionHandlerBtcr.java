@@ -1,26 +1,15 @@
 package uniregistrar.driver.did.btcr.handlers;
 
-import java.io.IOException;
-import java.net.URI;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.TimeUnit;
-
-import com.danubetech.keyformats.jose.JWK;
-import foundation.identity.did.*;
+import foundation.identity.did.DIDDocument;
+import foundation.identity.did.Service;
+import foundation.identity.did.VerificationMethod;
+import info.weboftrust.btctxlookup.Chain;
+import info.weboftrust.btctxlookup.ChainAndLocationData;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.bitcoinj.core.Base58;
 import org.bitcoinj.core.ECKey;
 import org.bitcoinj.core.NetworkParameters;
-
-import info.weboftrust.btctxlookup.Chain;
-import info.weboftrust.btctxlookup.ChainAndLocationData;
 import uniregistrar.RegistrationException;
 import uniregistrar.driver.did.btcr.DidBtcrDriver;
 import uniregistrar.driver.did.btcr.DidBtcrJob;
@@ -33,10 +22,21 @@ import uniregistrar.driver.did.btcr.util.BTCRUtils;
 import uniregistrar.driver.did.btcr.util.BitcoinUtils;
 import uniregistrar.driver.did.btcr.util.ECKeyUtils;
 import uniregistrar.driver.did.btcr.util.NetworkUtils;
-import uniregistrar.state.DeactivateState;
 import uniregistrar.state.CreateState;
+import uniregistrar.state.DeactivateState;
 import uniregistrar.state.SetCreateStateFinished;
 import uniregistrar.state.UpdateState;
+
+import java.io.IOException;
+import java.net.URI;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
 
 /**
  * This class finalizes the requests when created jobs are ready for completion
@@ -110,6 +110,7 @@ public class CompletionHandlerBtcr implements CompletionHandler {
 			} catch (InterruptedException e) {
 				log.debug("Completion worker is interrupted");
 				log.debug("InterruptedException: {}", () -> e);
+				Thread.currentThread().interrupt();
 			}
 		}
 	}
@@ -161,23 +162,19 @@ public class CompletionHandlerBtcr implements CompletionHandler {
 		Map<String, Object> secret = new LinkedHashMap<>();
 
 		if (job.isRotateKey()) {
-			final String publicKeyHex = privateKey.getPublicKeyAsHex();
-			final String privateKeyHex = privateKey.getPrivateKeyAsHex();
+			final Map<String, Object> jsonWebKey = ECKeyUtils.privateKeyToJWK(privateKey).toMap();
+			// Remove null values
+			jsonWebKey.values().removeAll(Collections.singleton(null));
 			final String privateKeyWif = privateKey.getPrivateKeyAsWiF(params);
-			final JWK jsonWebKey = ECKeyUtils.privateKeyToJWK(privateKey);
-			final String publicKeyDIDURL = BTCRUtils.identifierToPublicKeyDIDURL(did);
-
-			final List<Map<String, Object>> jsonKeys = new ArrayList<>();
+			final String privateKeyBase58 = Base58.encode(privateKey.getPrivKeyBytes());
 
 			final Map<String, Object> jsonKey = new LinkedHashMap<>();
-			jsonKey.put("publicKeyHex", publicKeyHex);
-			jsonKey.put("privateKeyHex", privateKeyHex);
+			jsonKey.put("purpose", new String[]{"update", "deactivate"});
+			jsonKey.put("privateKeyJwk", jsonWebKey);
+			jsonKey.put("privateKeyBase58", privateKeyBase58);
 			jsonKey.put("privateKeyWif", privateKeyWif);
-			jsonKey.put("privateKeyJwk", jsonWebKey.toMap());
-			jsonKey.put("publicKeyDIDURL", publicKeyDIDURL);
-			jsonKeys.add(jsonKey);
 
-			secret.put("updateKeys", jsonKeys);
+			secret.put("keys", jsonKey);
 		}
 
 		// Update is finished. Prepare the result.
@@ -238,46 +235,34 @@ public class CompletionHandlerBtcr implements CompletionHandler {
 			}
 		}
 
-		final String publicKeyHex = privateKey.getPublicKeyAsHex();
-		final String privateKeyHex = privateKey.getPrivateKeyAsHex();
 		final String privateKeyWif = privateKey.getPrivateKeyAsWiF(params);
 		final String privateKeyBase58 = Base58.encode(privateKey.getPrivKeyBytes());
-		final JWK jsonWebKey = ECKeyUtils.privateKeyToJWK(privateKey);
+		final Map<String, Object> jsonWebKey = ECKeyUtils.privateKeyToJWK(privateKey).toMap();
+		jsonWebKey.values().removeAll(Collections.singleton(null));
 		final String publicKeyDIDURL = BTCRUtils.identifierToPublicKeyDIDURL(did);
 
 		final ECKey changeKey = job.getChangeKey();
 
-		final String publicKeyHex2 = changeKey.getPublicKeyAsHex();
-		final String privateKeyHex2 = changeKey.getPrivateKeyAsHex();
 		final String privateKeyWif2 = changeKey.getPrivateKeyAsWiF(params);
-		final String privateKeyBase582 = Base58.encode(changeKey.getPrivKeyBytes());
-		final JWK jsonWebKey2 = ECKeyUtils.privateKeyToJWK(changeKey);
-
-		final List<Map<String, Object>> jsonKeys = new ArrayList<>();
+		final String privateKeyBase58_2 = Base58.encode(changeKey.getPrivKeyBytes());
+		final Map<String, Object> jsonWebKey2 = ECKeyUtils.privateKeyToJWK(changeKey).toMap();
+		jsonWebKey2.values().removeAll(Collections.singleton(null));
 
 		final Map<String, Object> jsonKey = new LinkedHashMap<>();
-		jsonKey.put("publicKeyHex", publicKeyHex);
-		jsonKey.put("privateKeyHex", privateKeyHex);
-		jsonKey.put("privateKeyWif", privateKeyWif);
-		jsonKey.put("privateKeyJwk", jsonWebKey.toMap());
+		jsonKey.put("purpose", new String[]{"authentication"});
+		jsonKey.put("privateKeyJwk", jsonWebKey);
 		jsonKey.put("privateKeyBase58", privateKeyBase58);
+		jsonKey.put("privateKeyWif", privateKeyWif);
 		jsonKey.put("publicKeyDIDURL", publicKeyDIDURL);
-		jsonKeys.add(jsonKey);
 
 		final Map<String, Object> secret = new LinkedHashMap<>();
-		secret.put("keys", jsonKeys);
-
-		final List<Map<String, Object>> jsonKeys2 = new ArrayList<>();
-
 		final Map<String, Object> jsonKey2 = new LinkedHashMap<>();
-		jsonKey2.put("publicKeyHex", publicKeyHex2);
-		jsonKey2.put("privateKeyHex", privateKeyHex2);
+		jsonKey2.put("purpose", new String[]{"update", "deactivate"});
+		jsonKey2.put("privateKeyJwk", jsonWebKey2);
+		jsonKey2.put("privateKeyBase58", privateKeyBase58_2);
 		jsonKey2.put("privateKeyWif", privateKeyWif2);
-		jsonKey2.put("privateKeyJwk", jsonWebKey2.toMap());
-		jsonKey2.put("privateKeyBase58", privateKeyBase582);
-		jsonKeys2.add(jsonKey2);
 
-		secret.put("updateKeys", jsonKeys2);
+		secret.put("keys", List.of(jsonKey, jsonKey2));
 
 		// Registration is finished. Prepare the result.
 		final Map<String, Object> methodMetadata = new LinkedHashMap<>();
@@ -300,9 +285,6 @@ public class CompletionHandlerBtcr implements CompletionHandler {
 		log.debug("Registration is completed: {}", () -> job);
 		log.debug("Registration State: {}", state::toString);
 
-//		if (job.getFundingType() == FundingType.SERVER) {
-//			driver.removeUtxoKey(job.getPrivateKey(), chain);
-//		}
 		driver.jobCompleted(job.getJobId());
 		driver.getCreateStates().put(job.getJobId(), state);
 
@@ -330,23 +312,16 @@ public class CompletionHandlerBtcr implements CompletionHandler {
 		Map<String, Object> secret = new LinkedHashMap<>();
 
 		if (job.isRotateKey()) {
-			final String publicKeyHex = privateKey.getPublicKeyAsHex();
-			final String privateKeyHex = privateKey.getPrivateKeyAsHex();
+			final Map<String, Object> jsonWebKey = ECKeyUtils.privateKeyToJWK(privateKey).toMap();
 			final String privateKeyWif = privateKey.getPrivateKeyAsWiF(params);
-			final JWK jsonWebKey = ECKeyUtils.privateKeyToJWK(privateKey);
-			final String publicKeyDIDURL = BTCRUtils.identifierToPublicKeyDIDURL(did);
-
-			final List<Map<String, Object>> jsonKeys = new ArrayList<>();
-
+			final String privateKeyBase58 = Base58.encode(privateKey.getPrivKeyBytes());
 			final Map<String, Object> jsonKey = new LinkedHashMap<>();
-			jsonKey.put("publicKeyHex", publicKeyHex);
-			jsonKey.put("privateKeyHex", privateKeyHex);
-			jsonKey.put("privateKeyWif", privateKeyWif);
-			jsonKey.put("privateKeyJwk", jsonWebKey.toMap());
-			jsonKey.put("publicKeyDIDURL", publicKeyDIDURL);
-			jsonKeys.add(jsonKey);
 
-			secret.put("spendingKeys", jsonKeys);
+			jsonWebKey.values().removeAll(Collections.singleton(null));
+			jsonKey.put("privateKeyJwk", jsonWebKey);
+			jsonKey.put("privateKeyBase58", privateKeyBase58);
+			jsonKey.put("privateKeyWif", privateKeyWif);
+			secret.put("keys", jsonKey);
 		}
 
 		// Update is finished. Prepare the result.
