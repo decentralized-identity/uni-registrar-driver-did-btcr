@@ -173,18 +173,18 @@ public class DeactivationHandlerBtcr implements DeactivationHandler {
 
 		final String cJobId = job.getJobId();
 
-		Map<String, Object> methodMetadata = new LinkedHashMap<>();
-		methodMetadata.put("deactivateInitTime", BTCRUtils.getTimeStamp());
-		methodMetadata.put("chain", chain.toString());
-		methodMetadata.put("transactionHash", sent.getTxId().toString());
-		methodMetadata.put("changeAddress", "" + changeAddr);
-		methodMetadata.put("balance", "" + value
+		Map<String, Object> didDocumentMetadata = new LinkedHashMap<>();
+		didDocumentMetadata.put("deactivateInitTime", BTCRUtils.getTimeStamp());
+		didDocumentMetadata.put("chain", chain.toString());
+		didDocumentMetadata.put("transactionHash", sent.getTxId().toString());
+		didDocumentMetadata.put("changeAddress", "" + changeAddr);
+		didDocumentMetadata.put("balance", "" + value
 				.subtract(sent.getFee() == null ? Transaction.REFERENCE_DEFAULT_MIN_TX_FEE : sent.getFee()).getValue());
-//		methodMetadata.put("old_did_continual_uri", "" + currentUri);
-		methodMetadata.put("operation", "deactivation");
+//		didDocumentMetadata.put("old_did_continual_uri", "" + currentUri);
+		didDocumentMetadata.put("operation", "deactivation");
 
 		deactivateState.setJobId(job.getJobId());
-		deactivateState.setMethodMetadata(methodMetadata);
+		deactivateState.setDidDocumentMetadata(didDocumentMetadata);
 		deactivateState.setJobId(cJobId);
 
 		if (configs.isFollowDeactivate() || rotateKey) {

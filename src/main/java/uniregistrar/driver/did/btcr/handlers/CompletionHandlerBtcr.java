@@ -179,19 +179,19 @@ public class CompletionHandlerBtcr implements CompletionHandler {
 		}
 
 		// Update is finished. Prepare the result.
-		final Map<String, Object> methodMetadata = new LinkedHashMap<>();
-		methodMetadata.put("updateCompletionTime", BTCRUtils.getTimeStamp());
-		methodMetadata.put("chain", chain);
-		methodMetadata.put("transactionHash", txHash);
-		methodMetadata.put("blockHeight", chainAndLocationData.getLocationData().getBlockHeight());
-		methodMetadata.put("transactionPosition", chainAndLocationData.getLocationData().getTransactionPosition());
-		methodMetadata.put("didContinuationUri", "" + didContinuationUri);
-		methodMetadata.put("operation", "update");
+		final Map<String, Object> didDocumentMetadata = new LinkedHashMap<>();
+		didDocumentMetadata.put("updateCompletionTime", BTCRUtils.getTimeStamp());
+		didDocumentMetadata.put("chain", chain);
+		didDocumentMetadata.put("transactionHash", txHash);
+		didDocumentMetadata.put("blockHeight", chainAndLocationData.getLocationData().getBlockHeight());
+		didDocumentMetadata.put("transactionPosition", chainAndLocationData.getLocationData().getTransactionPosition());
+		didDocumentMetadata.put("didContinuationUri", "" + didContinuationUri);
+		didDocumentMetadata.put("operation", "update");
 
 		final UpdateState state = UpdateState.build();
 
 		SetBtcrCreateStateFinished.setStateFinished(state, did, secret);
-		state.setMethodMetadata(methodMetadata);
+		state.setDidDocumentMetadata(didDocumentMetadata);
 		state.setJobId(job.getJobId());
 
 		log.info("Update state for the job {} is completed", job::getJobId);
@@ -269,20 +269,20 @@ public class CompletionHandlerBtcr implements CompletionHandler {
 		secret.put("verificationMethod", List.of(jsonKey, jsonKey2));
 
 		// Registration is finished. Prepare the result.
-		final Map<String, Object> methodMetadata = new LinkedHashMap<>();
-		methodMetadata.put("createCompletionTime", BTCRUtils.getTimeStamp());
-		methodMetadata.put("chain", chain);
-		methodMetadata.put("transactionHash", txHash);
-		methodMetadata.put("blockHeight", chainAndLocationData.getLocationData().getBlockHeight());
-		methodMetadata.put("transactionPosition", chainAndLocationData.getLocationData().getTransactionPosition());
-		methodMetadata.put("txoIndex", chainAndLocationData.getLocationData().getTxoIndex());
-		methodMetadata.put("didContinuationUri", "" + didContinuationUri);
-		methodMetadata.put("operation", "create");
+		final Map<String, Object> didDocumentMetadata = new LinkedHashMap<>();
+		didDocumentMetadata.put("createCompletionTime", BTCRUtils.getTimeStamp());
+		didDocumentMetadata.put("chain", chain);
+		didDocumentMetadata.put("transactionHash", txHash);
+		didDocumentMetadata.put("blockHeight", chainAndLocationData.getLocationData().getBlockHeight());
+		didDocumentMetadata.put("transactionPosition", chainAndLocationData.getLocationData().getTransactionPosition());
+		didDocumentMetadata.put("txoIndex", chainAndLocationData.getLocationData().getTxoIndex());
+		didDocumentMetadata.put("didContinuationUri", "" + didContinuationUri);
+		didDocumentMetadata.put("operation", "create");
 
 		final CreateState state = CreateState.build();
 
 		SetCreateStateFinished.setStateFinished(state, did, secret);
-		state.setMethodMetadata(methodMetadata);
+		state.setDidDocumentMetadata(didDocumentMetadata);
 		state.setJobId(job.getJobId());
 
 		log.info("Registration state for the job {} is completed", job::getJobId);
@@ -330,18 +330,18 @@ public class CompletionHandlerBtcr implements CompletionHandler {
 		}
 
 		// Update is finished. Prepare the result.
-		final Map<String, Object> methodMetadata = new LinkedHashMap<>();
-		methodMetadata.put("deactivateCompletionTime", BTCRUtils.getTimeStamp());
-		methodMetadata.put("chain", chain.toString());
-		methodMetadata.put("transactionHash", txHash);
-		methodMetadata.put("blockHeight", chainAndLocationData.getLocationData().getBlockHeight());
-		methodMetadata.put("transactionPosition", chainAndLocationData.getLocationData().getTransactionPosition());
-		methodMetadata.put("operation", "deactivation");
+		final Map<String, Object> didDocumentMetadata = new LinkedHashMap<>();
+		didDocumentMetadata.put("deactivateCompletionTime", BTCRUtils.getTimeStamp());
+		didDocumentMetadata.put("chain", chain.toString());
+		didDocumentMetadata.put("transactionHash", txHash);
+		didDocumentMetadata.put("blockHeight", chainAndLocationData.getLocationData().getBlockHeight());
+		didDocumentMetadata.put("transactionPosition", chainAndLocationData.getLocationData().getTransactionPosition());
+		didDocumentMetadata.put("operation", "deactivation");
 
 		final DeactivateState state = DeactivateState.build();
 
 		SetBtcrCreateStateFinished.setStateFinished(state, did, secret);
-		state.setMethodMetadata(methodMetadata);
+		state.setDidDocumentMetadata(didDocumentMetadata);
 		state.setJobId(job.getJobId());
 
 		log.info("Deactivation state for the job {} is completed", job::getJobId);

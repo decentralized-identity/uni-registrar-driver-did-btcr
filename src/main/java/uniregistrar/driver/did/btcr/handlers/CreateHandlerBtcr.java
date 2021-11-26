@@ -259,16 +259,16 @@ public class CreateHandlerBtcr implements CreateHandler {
 
 		publicKeyHex = changeKey.getPublicKeyAsHex();
 
-		final Map<String, Object> methodMetadata = new LinkedHashMap<>();
-		methodMetadata.put("createInitTime", BTCRUtils.getTimeStamp());
-		methodMetadata.put("chain", chain.toString());
-		methodMetadata.put("transactionHash", txID);
-		methodMetadata.put("balance", opFund.getAmount()
+		final Map<String, Object> didDocumentMetadata = new LinkedHashMap<>();
+		didDocumentMetadata.put("createInitTime", BTCRUtils.getTimeStamp());
+		didDocumentMetadata.put("chain", chain.toString());
+		didDocumentMetadata.put("transactionHash", txID);
+		didDocumentMetadata.put("balance", opFund.getAmount()
 											.subtract(sent.getFee() == null ? Transaction.REFERENCE_DEFAULT_MIN_TX_FEE : sent.getFee())
 											.getValue());
-		methodMetadata.put("changeAddress", "" + changeAddress);
-		methodMetadata.put("publicKeyHex", "" + publicKeyHex);
-		methodMetadata.put("didContinuationUri", "" + didContinuationUri);
+		didDocumentMetadata.put("changeAddress", "" + changeAddress);
+		didDocumentMetadata.put("publicKeyHex", "" + publicKeyHex);
+		didDocumentMetadata.put("didContinuationUri", "" + didContinuationUri);
 
 		// done
 
@@ -277,7 +277,7 @@ public class CreateHandlerBtcr implements CreateHandler {
 		SetCreateStateWaitConfirm.setStateWaitConfirm(state, String
 				.valueOf(BTCRUtils.estimateWaitingTime(configs, driver.getWalletService(chain).getBlockTimeSeconds())));
 		state.setJobId(job.getJobId());
-		state.setMethodMetadata(methodMetadata);
+		state.setDidDocumentMetadata(didDocumentMetadata);
 
 		state.setJobId(job.getJobId());
 		driver.addNewJob(job);

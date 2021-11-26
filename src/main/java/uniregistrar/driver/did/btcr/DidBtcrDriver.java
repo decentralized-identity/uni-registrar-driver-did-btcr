@@ -566,7 +566,7 @@ public class DidBtcrDriver implements Driver {
 				// This method double checks the confirmation state and will be removed after
 				// stabilizing the confidence tracking
 				else if (getBitcoinConfirmationTracker(
-						Chain.fromString((String) retState.getMethodMetadata().get("chain")))
+						Chain.fromString((String) retState.getDidDocumentMetadata().get("chain")))
 						.checkConfirmationsWithJobID(jobId)) {
 					DidBtcrJob job = unconfirmedJobs.get(jobId);
 					CompletableFuture<Void> completeJob = CompletableFuture.runAsync(() -> {
@@ -639,9 +639,9 @@ public class DidBtcrDriver implements Driver {
 			final Map<String, String> toRet = getFundingService(chain).askForFunding();
 			CreateState state = CreateState.build();
 			state.setDidState(null);
-			state.setRegistrarMetadata(null);
+			state.setDidRegistrationMetadata(null);
 			state.setJobId(null);
-			state.setMethodMetadata(Collections.singletonMap("fundingInfo", toRet));
+			state.setDidDocumentMetadata(Collections.singletonMap("fundingInfo", toRet));
 			return state;
 		}
 
@@ -675,7 +675,7 @@ public class DidBtcrDriver implements Driver {
 					updateStates.remove(jobId);
 					return state;
 				} else if (getBitcoinConfirmationTracker(
-						Chain.fromString((String) state.getMethodMetadata().get("chain")))
+						Chain.fromString((String) state.getDidDocumentMetadata().get("chain")))
 						.checkConfirmationsWithJobID(jobId)) {
 					DidBtcrJob job = unconfirmedJobs.get(jobId);
 					CompletableFuture<Void> completeJob = CompletableFuture.runAsync(() -> {
@@ -770,7 +770,7 @@ public class DidBtcrDriver implements Driver {
 					deactivateStates.remove(jobId);
 					return state;
 				} else if (getBitcoinConfirmationTracker(
-						Chain.fromString((String) state.getMethodMetadata().get("chain")))
+						Chain.fromString((String) state.getDidDocumentMetadata().get("chain")))
 						.checkConfirmationsWithJobID(jobId)) {
 					log.debug("TX is already confirmed, sending it for the completion!");
 					DidBtcrJob job = unconfirmedJobs.get(jobId);

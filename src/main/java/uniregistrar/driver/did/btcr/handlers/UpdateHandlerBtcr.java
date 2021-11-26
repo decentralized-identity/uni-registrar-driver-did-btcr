@@ -190,19 +190,19 @@ public class UpdateHandlerBtcr implements UpdateHandler {
 
 		final UpdateState updateState = UpdateState.build();
 
-		Map<String, Object> methodMetadata = new LinkedHashMap<>();
-		methodMetadata.put("updateInitTime", BTCRUtils.getTimeStamp());
-		methodMetadata.put("identifier", identifier);
-		methodMetadata.put("chain", chain.toString());
-		methodMetadata.put("transactionHash", sent.getTxId().toString());
-		methodMetadata.put("balance", value
+		Map<String, Object> didDocumentMetadata = new LinkedHashMap<>();
+		didDocumentMetadata.put("updateInitTime", BTCRUtils.getTimeStamp());
+		didDocumentMetadata.put("identifier", identifier);
+		didDocumentMetadata.put("chain", chain.toString());
+		didDocumentMetadata.put("transactionHash", sent.getTxId().toString());
+		didDocumentMetadata.put("balance", value
 				.subtract(sent.getFee() == null ? Transaction.REFERENCE_DEFAULT_MIN_TX_FEE : sent.getFee()).getValue());
-		methodMetadata.put("changeAddress", "" + changeAddr);
-		methodMetadata.put("publicKeyHex", "" + opFund.getChangeKey().getPublicKeyAsHex());
-		methodMetadata.put("didContinuationUri", "" + didContinuationUri);
+		didDocumentMetadata.put("changeAddress", "" + changeAddr);
+		didDocumentMetadata.put("publicKeyHex", "" + opFund.getChangeKey().getPublicKeyAsHex());
+		didDocumentMetadata.put("didContinuationUri", "" + didContinuationUri);
 
 		updateState.setJobId(job.getJobId());
-		updateState.setMethodMetadata(methodMetadata);
+		updateState.setDidDocumentMetadata(didDocumentMetadata);
 		SetCreateStateWaitConfirm.setStateWaitConfirm(updateState, String
 				.valueOf(BTCRUtils.estimateWaitingTime(configs, driver.getWalletService(chain).getBlockTimeSeconds())));
 		updateState.setJobId(cJobId);
