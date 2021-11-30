@@ -63,7 +63,7 @@ jobs:
           status: ${{ job.status }}
           fields: repo,commit,action,eventName,ref,workflow
         env:
-          SLACK_WEBHOOK_URL: ${{ env.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
 
   validate-pom:
     needs: set-version
@@ -94,7 +94,7 @@ jobs:
           status: ${{ job.status }}
           fields: repo,commit,action,eventName,ref,workflow
         env:
-          SLACK_WEBHOOK_URL: ${{ env.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
 
 
   publish-image:
@@ -139,4 +139,4 @@ jobs:
           status: ${{ job.status }}
           fields: repo,commit,action,eventName,ref,workflow
         env:
-          SLACK_WEBHOOK_URL: ${{ env.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
