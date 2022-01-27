@@ -1,13 +1,7 @@
 package uniregistrar.driver.did.btcr.util;
 
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
-import java.util.*;
-
-import javax.annotation.Nullable;
-
+import com.google.common.net.InetAddresses;
+import info.weboftrust.btctxlookup.BitcoinClientID;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.logging.log4j.LogManager;
@@ -20,14 +14,17 @@ import org.bitcoinj.params.MainNetParams;
 import org.bitcoinj.params.RegTestParams;
 import org.bitcoinj.params.TestNet3Params;
 import org.bitcoinj.script.Script;
-
-import com.google.common.net.InetAddresses;
-
-import info.weboftrust.btctxlookup.BitcoinClientID;
 import uniregistrar.driver.did.btcr.DriverConfigs;
 import uniregistrar.driver.did.btcr.DriverConstants;
 import uniregistrar.driver.did.btcr.diddoccontinuation.LocalFileDIDDocContinuation;
 import uniregistrar.driver.did.btcr.util.validators.ConfigurationException;
+
+import javax.annotation.Nullable;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.util.*;
 
 /**
  * The class where driver is prepared with provided parameters. Environment
@@ -588,6 +585,10 @@ public final class Configurator {
 			}
 		}
 		return peers;
+	}
+
+	public static boolean isRunningInsideKubernetes() {
+		return  System.getenv("KUBERNETES_SERVICE_HOST") != null;
 	}
 
 }

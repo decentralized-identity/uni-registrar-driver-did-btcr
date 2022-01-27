@@ -45,15 +45,8 @@ import uniregistrar.state.DeactivateState;
 import uniregistrar.state.UpdateState;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.MalformedURLException;
-import java.nio.channels.FileChannel;
-import java.nio.channels.FileLock;
-import java.nio.channels.OverlappingFileLockException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -137,7 +130,7 @@ public class DidBtcrDriver implements Driver {
 		try {
 			initDriver();
 		} catch (ConfigurationException e) {
-			log.error(e.getMessage());
+			log.error(e);
 			System.exit(1);
 		}
 	}
@@ -145,6 +138,20 @@ public class DidBtcrDriver implements Driver {
 	private void initDriver() throws ConfigurationException {
 
 		log.info("Initializing the Btcr Driver...");
+
+		// Temporary workaround against BitcoinJ wallet file corruptions when multiple instances access them
+		if(Configurator.isRunningInsideKubernetes()){
+			log.info("APP is running in Kubernetes!");
+			for(int i = 20; i>0; i--){
+				log.info("Waiting {} seconds before initializing the driver", i);
+				try {
+					TimeUnit.SECONDS.sleep(1);
+				} catch (InterruptedException e) {
+					Thread.currentThread().interrupt();
+					throw new RuntimeException(e);
+				}
+			}
+		}
 
 		final boolean mainnet = configs.isRunMainnet();
 		final boolean testnet = configs.isRunTestnet();
@@ -203,13 +210,28 @@ public class DidBtcrDriver implements Driver {
 		CompletableFuture<Boolean> openRegtest = null;
 
 		if (mainnet) {
-			openMainnet = CompletableFuture.supplyAsync(() -> openWalletService(Chain.MAINNET));
+			openMainnet = CompletableFuture.supplyAsync(() -> openWalletService(Chain.MAINNET))
+					.handle((r, ex) -> {
+						if (ex != null) {
+							throw new RuntimeException("Cannot start the mainnet walletAppKit: " + ex);
+						} else return r;
+					});
 		}
 		if (testnet) {
-			openTestnet = CompletableFuture.supplyAsync(() -> openWalletService(Chain.TESTNET));
+			openTestnet = CompletableFuture.supplyAsync(() -> openWalletService(Chain.TESTNET))
+					.handle((r, ex) -> {
+						if (ex != null) {
+							throw new RuntimeException("Cannot start the testnet walletAppKit: " + ex);
+						} else return r;
+					});
 		}
 		if (regtest) {
-			openRegtest = CompletableFuture.supplyAsync(() -> openWalletService(Chain.REGTESTNET));
+			openRegtest = CompletableFuture.supplyAsync(() -> openWalletService(Chain.REGTESTNET))
+					.handle((r, ex) -> {
+						if (ex != null) {
+							throw new RuntimeException("Cannot start the regtestnet walletAppKit: " + ex);
+						} else return r;
+					});
 		}
 		log.info("Setting driver state to online...");
 
@@ -223,7 +245,7 @@ public class DidBtcrDriver implements Driver {
 				}
 			}
 
-			if (openMainnet.isCompletedExceptionally() || !(openMainnet.getNow(false))) {
+			if (openMainnet.isCompletedExceptionally()) {
 				throw new ConfigurationException("Cannot start the mainnet walletAppKit!");
 
 			}
@@ -246,7 +268,7 @@ public class DidBtcrDriver implements Driver {
 				}
 			}
 
-			if (openTestnet.isCompletedExceptionally() || !(openTestnet.getNow(false))) {
+			if (openTestnet.isCompletedExceptionally()) {
 				throw new ConfigurationException("Cannot start the testnet walletAppKit!");
 			}
 
@@ -269,7 +291,7 @@ public class DidBtcrDriver implements Driver {
 				}
 			}
 
-			if (openRegtest.isCompletedExceptionally() || !(openRegtest.getNow(false))) {
+			if (openRegtest.isCompletedExceptionally()) {
 				throw new ConfigurationException("Cannot start the regtest walletAppKit!");
 			}
 
@@ -293,7 +315,7 @@ public class DidBtcrDriver implements Driver {
 		if (mainnet && configs.isActivateUTXOProducingMainnet()) {
 			try {
 				utxoWalletMainnetFile = new File(configs.getWalletPathMainnet() + "/mainnet_utxo_wallet");
-				utxoWalletMainnet = walletServiceMainnet.creatOrLoadWallet(utxoWalletMainnetFile, false);
+				utxoWalletMainnet = walletServiceMainnet.creatOrLoadWallet(utxoWalletMainnetFile, true);
 				walletServiceMainnet.addWallet(utxoWalletMainnet);
 			} catch (Exception e) {
 				throw new ConfigurationException(e);
@@ -306,7 +328,7 @@ public class DidBtcrDriver implements Driver {
 		if (testnet && configs.isActivateUTXOProducingTestnet()) {
 			try {
 				utxoWalletTestnetFile = new File(configs.getWalletPathTestnet() + "/testnet_utxo.wallet");
-				utxoWalletTestnet = walletServiceTestnet.creatOrLoadWallet(utxoWalletTestnetFile, false);
+				utxoWalletTestnet = walletServiceTestnet.creatOrLoadWallet(utxoWalletTestnetFile, true);
 				walletServiceTestnet.addWallet(utxoWalletTestnet);
 			} catch (Exception e) {
 				throw new ConfigurationException(e);
@@ -319,7 +341,7 @@ public class DidBtcrDriver implements Driver {
 		if (regtest && configs.isActivateUTXOProducingRegtest()) {
 			try {
 				utxoWalletRegtestnetFile = new File(configs.getWalletPathRegtest() + "/regtestnet_utxo.wallet");
-				utxoWalletRegtestnet = walletServiceRegtest.creatOrLoadWallet(utxoWalletRegtestnetFile, false);
+				utxoWalletRegtestnet = walletServiceRegtest.creatOrLoadWallet(utxoWalletRegtestnetFile, true);
 				walletServiceRegtest.addWallet(utxoWalletRegtestnet);
 			} catch (Exception e) {
 				throw new ConfigurationException(e);
@@ -406,57 +428,13 @@ public class DidBtcrDriver implements Driver {
 		}
 	}
 
-	private boolean canLockFile(String filePath, int waitSec) {
-		for (int i = 1; i <= waitSec; i++) {
-			try (FileOutputStream fileOutputStream = new FileOutputStream(filePath, true);
-			     FileChannel channel = fileOutputStream.getChannel()) {
-
-				FileLock lock = channel.tryLock();
-				lock.release();
-				return true;
-
-			} catch (OverlappingFileLockException e) {
-				log.warn("File '{}' is already locked!", filePath);
-				log.debug("Lock attempt number: {}, remaining attempts: {}, rate: 1 attempt per second.", i, waitSec - i);
-				try {
-					TimeUnit.SECONDS.sleep(1);
-				} catch (InterruptedException ie) {
-					log.error("Interrupted: ", ie);
-					Thread.currentThread().interrupt();
-				}
-
-			} catch (IOException e) {
-				log.error("IOException: ", e);
-			}
-		}
-
-		return false;
-	}
-
 	private boolean openWalletService(Chain chain) {
 		Preconditions.checkNotNull(chain, "Chain cannot be null!");
 		log.info("Opening wallet for the chain {} ...", chain);
 
 		String walletPath = configs.getWalletPath(chain);
 		String walletPrefix = configs.getWalletPrefix(chain);
-		Path fullPathWallet = Paths.get(walletPath, walletPrefix + ".wallet");
-		Path fullPathChain = Paths.get(walletPath, walletPrefix + ".spvchain");
 
-		if(Files.exists(fullPathWallet)) {
-			boolean wLock = canLockFile(fullPathWallet.toString(), 10);
-			if (!wLock) {
-				log.error("Lock for the wallet file of {} cannot acquired!", chain);
-				return false;
-			}
-		}
-
-		if(Files.exists(fullPathChain)) {
-			boolean cLock = canLockFile(fullPathChain.toString(), 10);
-			if (!cLock) {
-				log.error("Lock for the chain file of {} cannot acquired!", chain);
-				return false;
-			}
-		}
 		switch (chain) {
 			case MAINNET: {
 
