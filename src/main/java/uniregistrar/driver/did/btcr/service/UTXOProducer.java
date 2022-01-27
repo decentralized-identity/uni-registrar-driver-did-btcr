@@ -78,6 +78,7 @@ public class UTXOProducer {
 
 		executor.execute(() -> {
 			try {
+				TimeUnit.SECONDS.sleep(30); // Wait for wallet refreshes
 				splitUtxos();
 			} catch (InterruptedException e) {
 				Thread.currentThread().interrupt();
