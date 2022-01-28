@@ -1,8 +1,8 @@
 package uniregistrar.driver.did.btcr.state;
 
-import uniregistrar.state.DeactivateState;
 import uniregistrar.state.CreateState;
-import uniregistrar.state.SetCreateState;
+import uniregistrar.state.DeactivateState;
+import uniregistrar.state.SetState;
 import uniregistrar.state.UpdateState;
 
 public class SetBtcrCreateStateFailed {
@@ -16,7 +16,7 @@ public class SetBtcrCreateStateFailed {
 
 	public static boolean isStateFail(CreateState createState) {
 
-		return "failed".equals(SetCreateState.getState(createState));
+		return "failed".equals(SetState.getState(createState));
 	}
 
 	public static String getStateFail(UpdateState updateState) {

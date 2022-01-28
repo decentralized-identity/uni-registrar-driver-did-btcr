@@ -1,8 +1,8 @@
 package uniregistrar.driver.did.btcr.state;
 
-import uniregistrar.state.DeactivateState;
 import uniregistrar.state.CreateState;
-import uniregistrar.state.SetCreateState;
+import uniregistrar.state.DeactivateState;
+import uniregistrar.state.SetState;
 import uniregistrar.state.UpdateState;
 
 public final class SetBtcrCreateStateWait {
@@ -18,7 +18,7 @@ public final class SetBtcrCreateStateWait {
 
 	public static boolean isStateWait(CreateState createState) {
 
-		return "wait".equals(SetCreateState.getState(createState));
+		return "wait".equals(SetState.getState(createState));
 	}
 
 	public static String getStateWait(UpdateState updateState) {

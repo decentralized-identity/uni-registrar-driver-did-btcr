@@ -22,7 +22,7 @@ import uniregistrar.driver.did.btcr.state.SetCreateStateWaitConfirm;
 import uniregistrar.driver.did.btcr.util.*;
 import uniregistrar.request.CreateRequest;
 import uniregistrar.state.CreateState;
-import uniregistrar.state.SetCreateStateAction;
+import uniregistrar.state.SetStateAction;
 
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
@@ -132,7 +132,7 @@ public class CreateHandlerBtcr implements CreateHandler {
 					driver.addFundingRequiredJob(job);
 					CreateState state = CreateState.build();
 					state.setJobId(job.getJobId());
-					SetCreateStateAction.setStateAction(state, message);
+					SetStateAction.setStateAction(state, message);
 					return state;
 				}
 			}

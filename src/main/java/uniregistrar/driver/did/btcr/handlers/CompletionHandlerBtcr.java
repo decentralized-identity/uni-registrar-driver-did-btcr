@@ -24,7 +24,7 @@ import uniregistrar.driver.did.btcr.util.ECKeyUtils;
 import uniregistrar.driver.did.btcr.util.NetworkUtils;
 import uniregistrar.state.CreateState;
 import uniregistrar.state.DeactivateState;
-import uniregistrar.state.SetCreateStateFinished;
+import uniregistrar.state.SetStateFinished;
 import uniregistrar.state.UpdateState;
 
 import java.io.IOException;
@@ -281,7 +281,7 @@ public class CompletionHandlerBtcr implements CompletionHandler {
 
 		final CreateState state = CreateState.build();
 
-		SetCreateStateFinished.setStateFinished(state, did, secret);
+		SetStateFinished.setStateFinished(state, did, secret);
 		state.setDidDocumentMetadata(didDocumentMetadata);
 		state.setJobId(job.getJobId());
 
