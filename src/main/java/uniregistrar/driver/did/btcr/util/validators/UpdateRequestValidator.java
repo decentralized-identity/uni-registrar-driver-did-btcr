@@ -14,8 +14,8 @@ public final class UpdateRequestValidator {
 			throw new ValidationException("Request options are null!");
 		}
 
-		if (StringUtils.isEmpty(request.getIdentifier())) {
-			throw new ValidationException("Update request has no identifier");
+		if (StringUtils.isEmpty(request.getDid())) {
+			throw new ValidationException("Update request has no did");
 		}
 
 		String chain = ParsingUtils.parseChain(request.getOptions());

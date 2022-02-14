@@ -11,8 +11,8 @@ public final class DeactivationRequestValidator {
 	public static void validate(final DeactivateRequest request, final DriverConfigs configs)
 			throws ValidationException {
 
-		if (StringUtils.isEmpty(request.getIdentifier())) {
-			throw new ValidationException("Deactivation request has no identifier");
+		if (StringUtils.isEmpty(request.getDid())) {
+			throw new ValidationException("Deactivation request has no did");
 		}
 
 		if (request.getOptions() == null) {
