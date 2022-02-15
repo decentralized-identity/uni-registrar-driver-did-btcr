@@ -138,7 +138,7 @@ public class CompletionHandlerBtcr implements CompletionHandler {
 
 		final ChainAndLocationData chainAndLocationData = NetworkUtils.getChainAndLocationData(chain, txHash,
 				driver.getRpcClient(chain));
-		final String did = job.getIdentifier();
+		final String did = job.getDid();
 
 		if (didContinuationUri != null) {
 			log.debug("Storing the DID Continuation Document with URI: {}", () -> didContinuationUri);
@@ -240,7 +240,7 @@ public class CompletionHandlerBtcr implements CompletionHandler {
 		final String privateKeyBase58 = Base58.encode(privateKey.getPrivKeyBytes());
 		final Map<String, Object> jsonWebKey = ECKeyUtils.privateKeyToJWK(privateKey).toMap();
 		jsonWebKey.values().removeAll(Collections.singleton(null));
-		final String publicKeyDIDURL = BTCRUtils.identifierToPublicKeyDIDURL(did);
+		final String publicKeyDIDURL = BTCRUtils.didToPublicKeyDIDURL(did);
 
 		final ECKey changeKey = job.getChangeKey();
 
@@ -306,7 +306,7 @@ public class CompletionHandlerBtcr implements CompletionHandler {
 
 		final ChainAndLocationData chainAndLocationData = NetworkUtils.getChainAndLocationData(chain, txHash,
 				driver.getRpcClient(chain));
-		final String did = job.getIdentifier();
+		final String did = job.getDid();
 
 		if (didContinuationUri != null) {
 			log.debug("Storing the DID Continuation Document with URI: {}", () -> didContinuationUri);

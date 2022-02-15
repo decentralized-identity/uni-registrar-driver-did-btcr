@@ -28,7 +28,7 @@ public class DidBtcrJob {
 	private final boolean rotateKey;
 	private final long creationTime;
 	private final FundingType fundingType;
-	private String identifier = null;
+	private String did = null;
 
 	public DidBtcrJob(Chain chain, String transactionHash, URI didContinuationUri, ECKey privateKey, ECKey changeKey,
 					  List<Service> addServices, List<VerificationMethod> addVerificationMethods,
@@ -62,16 +62,16 @@ public class DidBtcrJob {
 		return fundingType;
 	}
 
-	public String getIdentifier() {
-		return identifier;
+	public String getDid() {
+		return did;
 	}
 
 	public void setJobId(String jobId) {
 		this.jobId = jobId;
 	}
 
-	public void setIdentifier(String identifier) {
-		this.identifier = identifier;
+	public void setDid(String did) {
+		this.did = did;
 	}
 
 	public boolean isRotateKey() {
@@ -127,7 +127,7 @@ public class DidBtcrJob {
 
 	@Override
 	public String toString() {
-		return MoreObjects.toStringHelper(this).add("jobId", jobId).add("identifier", identifier)
+		return MoreObjects.toStringHelper(this).add("jobId", jobId).add("did", did)
 						  .add("chain", chain.toString()).add("transactionHash", transactionHash)
 						  .add("didContinuationUri", didContinuationUri).add("privateKey", privateKey).add("changeKey", changeKey)
 						  .add("addServices", addServices).add("addVerificationMethods", addVerificationMethods)

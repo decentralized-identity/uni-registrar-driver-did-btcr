@@ -51,12 +51,12 @@ public class DeactivationHandlerBtcr implements DeactivationHandler {
 	@Override
 	public DeactivateState handle(DeactivateRequest request) throws RegistrationException {
 
-		final String identifier = request.getIdentifier();
-		if (StringUtils.isEmpty(identifier)) {
-			throw new RegistrationException("Deactivation request has no identifier");
+		final String did = request.getDid();
+		if (StringUtils.isEmpty(did)) {
+			throw new RegistrationException("Deactivation request has no did");
 		}
 
-		log.debug("Deactivation request for {}", () -> identifier);
+		log.debug("Deactivation request for {}", () -> did);
 
 		if (request.getSecret() == null || request.getSecret().get("privateKeyWiF") == null) {
 			throw new RegistrationException("Secret object is null!");
@@ -167,7 +167,7 @@ public class DeactivationHandlerBtcr implements DeactivationHandler {
 		DidBtcrJob job = new DidBtcrJob(chain, sent.getTxId().toString(), null, opFund.getFundingKey(),
 				opFund.getChangeKey(), null, null, null, JobType.DEACTIVATE, rotateKey, opFund.getFundingType());
 
-		job.setIdentifier(identifier);
+		job.setDid(did);
 
 		DeactivateState deactivateState = DeactivateState.build();
 
@@ -193,7 +193,7 @@ public class DeactivationHandlerBtcr implements DeactivationHandler {
 			driver.getBitcoinConfirmationTracker(chain).followTransaction(cJobId, sent.getTxId().toString());
 			driver.addNewJob(job);
 		} else {
-			SetBtcrCreateStateFinished.setStateFinished(deactivateState, identifier, null);
+			SetBtcrCreateStateFinished.setStateFinished(deactivateState, did, null);
 		}
 
 		driver.getDeactivateStates().put(job.getJobId(), deactivateState);

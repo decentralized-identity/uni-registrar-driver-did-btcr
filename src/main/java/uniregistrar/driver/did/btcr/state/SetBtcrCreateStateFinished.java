@@ -14,10 +14,10 @@ public final class SetBtcrCreateStateFinished {
 
 	}
 
-	public static String getStateFinishedIdentifier(CreateState createState) {
+	public static String getStateFinishedDid(CreateState createState) {
 		if (!isStateFinished(createState))
 			return null;
-		return (String) createState.getDidState().get("identifier");
+		return (String) createState.getDidState().get("did");
 	}
 
 	public static boolean isStateFinished(CreateState createState) {
@@ -25,10 +25,10 @@ public final class SetBtcrCreateStateFinished {
 		return "finished".equals(SetBtcrCreateState.getState(createState));
 	}
 
-	public static String getStateFinishedIdentifier(UpdateState updateState) {
+	public static String getStateFinishedDid(UpdateState updateState) {
 		if (!isStateFinished(updateState))
 			return null;
-		return (String) updateState.getDidState().get("identifier");
+		return (String) updateState.getDidState().get("did");
 	}
 
 	public static boolean isStateFinished(UpdateState updateState) {
@@ -36,10 +36,10 @@ public final class SetBtcrCreateStateFinished {
 		return "finished".equals(SetBtcrCreateState.getState(updateState));
 	}
 
-	public static String getStateFinishedIdentifier(DeactivateState deactivateState) {
+	public static String getStateFinishedDid(DeactivateState deactivateState) {
 		if (!isStateFinished(deactivateState))
 			return null;
-		return (String) deactivateState.getDidState().get("identifier");
+		return (String) deactivateState.getDidState().get("did");
 	}
 
 	public static boolean isStateFinished(DeactivateState deactivateState) {
@@ -71,25 +71,25 @@ public final class SetBtcrCreateStateFinished {
 		return (Map<String, Object>) deactivateState.getDidState().get("secret");
 	}
 
-	public static void setStateFinished(CreateState createState, String identifier, Map<String, Object> secret) {
+	public static void setStateFinished(CreateState createState, String did, Map<String, Object> secret) {
 
 		SetBtcrCreateState.setState(createState, "finished");
-		createState.getDidState().put("identifier", identifier);
+		createState.getDidState().put("did", did);
 		createState.getDidState().put("secret", secret);
 	}
 
-	public static void setStateFinished(UpdateState updateState, String identifier, Map<String, Object> secret) {
+	public static void setStateFinished(UpdateState updateState, String did, Map<String, Object> secret) {
 
 		SetBtcrCreateState.setState(updateState, "finished");
-		updateState.getDidState().put("identifier", identifier);
+		updateState.getDidState().put("did", did);
 		updateState.getDidState().put("secret", secret);
 	}
 
-	public static void setStateFinished(DeactivateState deactivateState, String identifier,
+	public static void setStateFinished(DeactivateState deactivateState, String did,
 			Map<String, Object> secret) {
 
 		SetBtcrCreateState.setState(deactivateState, "finished");
-		deactivateState.getDidState().put("identifier", identifier);
+		deactivateState.getDidState().put("did", did);
 		deactivateState.getDidState().put("secret", secret);
 	}
 }

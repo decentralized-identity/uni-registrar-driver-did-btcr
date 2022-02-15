@@ -27,8 +27,8 @@ public final class BTCRUtils {
 		return System.getProperty("line.separator");
 	}
 
-	public static String identifierToPublicKeyDIDURL(String identifier) {
-		return identifier + "#key-0";
+	public static String didToPublicKeyDIDURL(String did) {
+		return did + "#key-0";
 	}
 
 	public static String stripTxref(String txref) {

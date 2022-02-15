@@ -44,7 +44,7 @@
 {
   "jobId": "f9b1687b-5060-4791-868e-86e09a8c7e80",
   "didState": {
-    "identifier": "did:btcr:xx0p-qqpq-q3l6-gpt",
+    "did": "did:btcr:xx0p-qqpq-q3l6-gpt",
     "state": "finished",
     "secret": {
       "register_keys": [
@@ -106,7 +106,7 @@
     },
     "methodMetadata": {
         "update_init_time": "2020-06-23T14:58:33Z",
-        "identifier": "did:btcr:xx0p-qqpq-q3l6-gpt",
+        "did": "did:btcr:xx0p-qqpq-q3l6-gpt",
         "chain": "REGTESTNET",
         "transactionHash": "f8ff723a65d8a260e7203fb25061f01f6228e730244a6bd0197ba4fc6c498fc9",
         "balance": 98000,
@@ -124,7 +124,7 @@
 {
     "jobId": "d484d49e-5c0a-4593-aaf7-13a0d6a783ff",
     "didState": {
-        "identifier": "did:btcr:xx0p-qqpq-q3l6-gpt",
+        "did": "did:btcr:xx0p-qqpq-q3l6-gpt",
         "state": "finished",
         "secret": { // New secret is returned if key-rotation was requested
             "keys": [{
@@ -164,7 +164,7 @@
 {
     "jobId": "f401a032-4e1a-4775-957c-274d0d00cc10",
     "didState": {
-        "identifier": "did:btcr:xs2p-qqzq-qpd4-55s",
+        "did": "did:btcr:xs2p-qqzq-qpd4-55s",
         "state": "finished",
         "secret": null 
     },

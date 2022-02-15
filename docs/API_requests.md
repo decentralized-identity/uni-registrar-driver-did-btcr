@@ -90,7 +90,7 @@
 
 ```json
 {
-    "identifier": "did:btcr:xqe8-vr9q-qsjh-whp", // DID-BTCR
+    "did": "did:btcr:xqe8-vr9q-qsjh-whp", // DID-BTCR
     "options": {
         "chain": "TESTNET", // TESTNET | REGTESTNET | MAINNET 
         "rotateKey": true // true | false: creates a new random key for change address if true 
@@ -108,7 +108,7 @@
 
 ```json
 {
-    "identifier": "did:btcr:xc7q-qqpq-qsjg-4xv", // DID-BTCR
+    "did": "did:btcr:xc7q-qqpq-qsjg-4xv", // DID-BTCR
     "options": {
         "chain": "REGTESTNET" // TESTNET | REGTESTNET | MAINNET 
     },

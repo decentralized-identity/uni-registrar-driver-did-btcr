@@ -53,7 +53,7 @@ public class UpdateHandlerBtcr implements UpdateHandler {
 	@Override
 	public UpdateState handle(final UpdateRequest request) throws RegistrationException {
 
-		final String identifier = request.getIdentifier();
+		final String did = request.getDid();
 		final Chain chain = Chain.fromString(ParsingUtils.parseChain(request.getOptions()));
 		log.debug("Update request will be processed on chain: {}", () -> chain);
 
@@ -76,7 +76,7 @@ public class UpdateHandlerBtcr implements UpdateHandler {
 
 		ChainAndTxid chainAndTxid;
 		log.debug("Looking up to chain and tx id resolution!");
-		String onChainIdentifier = BTCRUtils.replaceHrpTxRef(identifier, chain.toString(), configs);
+		String onChainDid = BTCRUtils.replaceHrpTxRef(did, chain.toString(), configs);
 
 		Address toCheck = BitcoinUtils.getAddrStringFromKey(chain, secretKey, configs.getPrefScriptType());
 		log.debug("Address to spend: {}", toCheck::toString);
@@ -183,7 +183,7 @@ public class UpdateHandlerBtcr implements UpdateHandler {
 				doc == null ? null : doc.getVerificationMethods(), doc == null ? null : doc.getAuthenticationVerificationMethods(),
 				JobType.UPDATE, rotateKey, opFund.getFundingType());
 
-		job.setIdentifier(identifier);
+		job.setDid(did);
 
 		driver.addNewJob(job);
 		final String cJobId = job.getJobId();
@@ -192,7 +192,7 @@ public class UpdateHandlerBtcr implements UpdateHandler {
 
 		Map<String, Object> didDocumentMetadata = new LinkedHashMap<>();
 		didDocumentMetadata.put("updateInitTime", BTCRUtils.getTimeStamp());
-		didDocumentMetadata.put("identifier", identifier);
+		didDocumentMetadata.put("did", did);
 		didDocumentMetadata.put("chain", chain.toString());
 		didDocumentMetadata.put("transactionHash", sent.getTxId().toString());
 		didDocumentMetadata.put("balance", value
