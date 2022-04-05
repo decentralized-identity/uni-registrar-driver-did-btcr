@@ -1,12 +1,12 @@
 package uniregistrar.driver.did.btcr.handlers;
 
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.nio.charset.StandardCharsets;
-import java.util.LinkedHashMap;
-import java.util.Map;
-
+import com.google.common.base.Preconditions;
 import foundation.identity.did.DIDDocument;
+import info.weboftrust.btctxlookup.BitcoinClientID;
+import info.weboftrust.btctxlookup.Chain;
+import info.weboftrust.btctxlookup.ChainAndTxid;
+import info.weboftrust.btctxlookup.bitcoinconnection.BTCDRPCBitcoinConnection;
+import info.weboftrust.btctxlookup.bitcoinconnection.BitcoinConnectionException;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -15,14 +15,6 @@ import org.bitcoinj.script.Script;
 import org.bitcoinj.script.ScriptBuilder;
 import org.bitcoinj.script.ScriptChunk;
 import org.bitcoinj.script.ScriptPattern;
-
-import com.google.common.base.Preconditions;
-
-import info.weboftrust.btctxlookup.BitcoinClientID;
-import info.weboftrust.btctxlookup.Chain;
-import info.weboftrust.btctxlookup.ChainAndTxid;
-import info.weboftrust.btctxlookup.bitcoinconnection.BTCDRPCBitcoinConnection;
-import info.weboftrust.btctxlookup.bitcoinconnection.BitcoinConnectionException;
 import uniregistrar.RegistrationException;
 import uniregistrar.driver.did.btcr.DidBtcrDriver;
 import uniregistrar.driver.did.btcr.DidBtcrJob;
@@ -35,6 +27,12 @@ import uniregistrar.driver.did.btcr.state.SetCreateStateWaitConfirm;
 import uniregistrar.driver.did.btcr.util.*;
 import uniregistrar.request.UpdateRequest;
 import uniregistrar.state.UpdateState;
+
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 /**
  * Class to handle update requests
@@ -176,7 +174,11 @@ public class UpdateHandlerBtcr implements UpdateHandler {
 
 		log.debug("Sent transaction! Transaction hash is {}", () -> sent.getTxId().toString());
 
-		final DIDDocument doc = request.getDidDocument();
+		if(request.getDidDocument() == null || request.getDidDocument().isEmpty()){
+			throw new RegistrationException("DIDDocument is not provided for update!");
+		}
+
+		final DIDDocument doc = request.getDidDocument().get(0);
 
 		DidBtcrJob job = new DidBtcrJob(chain, sent.getTxId().toString(), didContinuationUri, opFund.getFundingKey(),
 				opFund.getChangeKey(), doc == null ? null : doc.getServices(),
