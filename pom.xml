@@ -27,7 +27,7 @@
 		<did-common-java.version>0.3.0</did-common-java.version>
 		<commons-lang3.version>3.12.0</commons-lang3.version>
 		<bitcoinj-core.version>0.16.1</bitcoinj-core.version>
-		<google.guava.version>31.0.1-jre</google.guava.version>
+		<google.guava.version>32.0.0-jre</google.guava.version>
 		<btc-tx-lookup-java.version>0.3.0</btc-tx-lookup-java.version>
 		<log4j.version>2.17.1</log4j.version>
 	</properties>
